@@ -58,4 +58,62 @@ defmodule BackendFight.BankTest do
       assert %Ecto.Changeset{} = Bank.change_customer(customer)
     end
   end
+
+  describe "transactions" do
+    alias BackendFight.Bank.Transaction
+
+    import BackendFight.BankFixtures
+
+    @invalid_attrs %{description: nil, type: nil, value: nil}
+
+    test "list_transactions/0 returns all transactions" do
+      transaction = transaction_fixture()
+      assert Bank.list_transactions() == [transaction]
+    end
+
+    test "get_transaction!/1 returns the transaction with given id" do
+      transaction = transaction_fixture()
+      assert Bank.get_transaction!(transaction.id) == transaction
+    end
+
+    test "create_transaction/1 with valid data creates a transaction" do
+      valid_attrs = %{description: "some description", type: :c, value: 42}
+
+      assert {:ok, %Transaction{} = transaction} = Bank.create_transaction(valid_attrs)
+      assert transaction.description == "some description"
+      assert transaction.type == :c
+      assert transaction.value == 42
+    end
+
+    test "create_transaction/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(@invalid_attrs)
+    end
+
+    test "update_transaction/2 with valid data updates the transaction" do
+      transaction = transaction_fixture()
+      update_attrs = %{description: "some updated description", type: :d, value: 43}
+
+      assert {:ok, %Transaction{} = transaction} = Bank.update_transaction(transaction, update_attrs)
+      assert transaction.description == "some updated description"
+      assert transaction.type == :d
+      assert transaction.value == 43
+    end
+
+    test "update_transaction/2 with invalid data returns error changeset" do
+      transaction = transaction_fixture()
+      assert {:error, %Ecto.Changeset{}} = Bank.update_transaction(transaction, @invalid_attrs)
+      assert transaction == Bank.get_transaction!(transaction.id)
+    end
+
+    test "delete_transaction/1 deletes the transaction" do
+      transaction = transaction_fixture()
+      assert {:ok, %Transaction{}} = Bank.delete_transaction(transaction)
+      assert_raise Ecto.NoResultsError, fn -> Bank.get_transaction!(transaction.id) end
+    end
+
+    test "change_transaction/1 returns a transaction changeset" do
+      transaction = transaction_fixture()
+      assert %Ecto.Changeset{} = Bank.change_transaction(transaction)
+    end
+  end
 end

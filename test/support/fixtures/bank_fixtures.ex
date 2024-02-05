@@ -18,4 +18,20 @@ defmodule BackendFight.BankFixtures do
 
     customer
   end
+
+  @doc """
+  Generate a transaction.
+  """
+  def transaction_fixture(attrs \\ %{}) do
+    {:ok, transaction} =
+      attrs
+      |> Enum.into(%{
+        description: "some description",
+        type: :c,
+        value: 42
+      })
+      |> BackendFight.Bank.create_transaction()
+
+    transaction
+  end
 end
