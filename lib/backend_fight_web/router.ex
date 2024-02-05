@@ -5,8 +5,9 @@ defmodule BackendFightWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/api", BackendFightWeb do
+  scope "/", BackendFightWeb do
     pipe_through :api
+    get "/clientes/:id/extrato", CustomerController, :show
   end
 
   # Enable LiveDashboard in development
