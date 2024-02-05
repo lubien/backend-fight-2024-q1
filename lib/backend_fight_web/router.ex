@@ -8,7 +8,7 @@ defmodule BackendFightWeb.Router do
   scope "/", BackendFightWeb do
     pipe_through :api
     get "/clientes/:id/extrato", CustomerController, :show
-    post "/clientes/:id/transacoes", TransactionController, :create
+    post "/clientes/:customer_id/transacoes", TransactionController, :create
   end
 
   # Enable LiveDashboard in development

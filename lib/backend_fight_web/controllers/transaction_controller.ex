@@ -6,12 +6,16 @@ defmodule BackendFightWeb.TransactionController do
 
   action_fallback BackendFightWeb.FallbackController
 
-  def create(conn, %{"transaction" => transaction_params}) do
-    with {:ok, %Transaction{} = transaction} <- Bank.create_transaction(transaction_params) do
-      conn
-      |> put_status(:created)
-      # |> put_resp_header("location", ~p"/api/transactions/#{transaction}")
-      |> render(:show, transaction: transaction)
+  def create(conn, %{"customer_id" => customer_id, "transaction" => transaction_params}) do
+    case Bank.get_customer(customer_id) do
+      nil ->
+        {:error, :not_found}
+      customer ->
+        with {:ok, %Transaction{} = transaction} <- Bank.create_transaction(customer, transaction_params) do
+          conn
+          |> put_status(:created)
+          |> render(:show, transaction: transaction)
+        end
     end
   end
 end

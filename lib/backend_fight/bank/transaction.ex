@@ -13,9 +13,22 @@ defmodule BackendFight.Bank.Transaction do
   end
 
   @doc false
-  def changeset(transaction, attrs) do
+  def changeset(transaction, attrs, customer_id) do
     transaction
-    |> cast(attrs, [:value, :type, :description])
-    |> validate_required([:value, :type, :description])
+    |> cast(%{customer_id: customer_id}, [:customer_id])
+    |> cast(attrs, [:value, :type, :description, :customer_id])
+    |> validate_required([:value, :type, :description, :customer_id])
+    |> foreign_key_constraint(:customer_id)
+  end
+
+  def validate_balance(changeset, balance) do
+    validate_change(changeset, :value, fn :value, value ->
+      type = get_change(changeset, :type)
+      if type == :d && value > balance do
+        [value: "value cannot go over #{balance}"]
+      else
+        []
+      end
+    end)
   end
 end

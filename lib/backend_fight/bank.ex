@@ -159,28 +159,32 @@ defmodule BackendFight.Bank do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_transaction(attrs \\ %{}) do
-    %Transaction{}
-    |> Transaction.changeset(attrs)
-    |> Repo.insert()
+  def create_transaction(customer, attrs \\ %{}) do
+    res =
+      Repo.transaction(fn ->
+        balance = get_customer_balance(customer.id)
+
+        %Transaction{}
+        |> Transaction.changeset(attrs, customer.id)
+        |> Transaction.validate_balance(balance)
+        |> Repo.insert()
+      end)
+
+    with {:ok, res} <- res do
+      res
+    end
   end
 
-  @doc """
-  Updates a transaction.
+  def get_customer_balance(customer_id) do
+    subquery_balance = from t in Transaction,
+      where: t.customer_id == ^customer_id,
+      select: sum(fragment("case when ? = 'c' then ? else ? end", t.type, t.value, -t.value))
 
-  ## Examples
+    q = from c in Customer,
+      where: c.id == ^customer_id,
+      select: fragment("? + coalesce(?, 0)", c.limit, subquery(subquery_balance))
 
-      iex> update_transaction(transaction, %{field: new_value})
-      {:ok, %Transaction{}}
-
-      iex> update_transaction(transaction, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def update_transaction(%Transaction{} = transaction, attrs) do
-    transaction
-    |> Transaction.changeset(attrs)
-    |> Repo.update()
+    Repo.one!(q)
   end
 
   @doc """
@@ -209,6 +213,6 @@ defmodule BackendFight.Bank do
 
   """
   def change_transaction(%Transaction{} = transaction, attrs \\ %{}) do
-    Transaction.changeset(transaction, attrs)
+    Transaction.changeset(transaction, attrs, nil)
   end
 end
