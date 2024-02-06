@@ -69,73 +69,104 @@ defmodule BackendFight.BankTest do
       assert Bank.get_customer_balance(customer.id) == 0
 
       assert {:ok, %Transaction{} = transaction} = Bank.create_transaction(customer, %{
-        description: "some description",
+        description: "trade",
         type: "d",
         value: 1
       })
-      assert transaction.description == "some description"
+      assert transaction.description == "trade"
       assert transaction.type == :d
       assert transaction.value == 1
 
       assert Bank.get_customer_balance(customer.id) == -1
     end
 
+    test "create_transaction/1 does not work with non integers" do
+      customer = customer_fixture(%{limit: 1})
+      assert Bank.get_customer_balance(customer.id) == 0
+      assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
+        description: "trade",
+        type: "d",
+        value: 0.5
+      })
+      assert Bank.get_customer_balance(customer.id) == 0
+    end
+
+    test "create_transaction/1 does not work with names not in the range on 1..10 chars" do
+      customer = customer_fixture(%{limit: 1})
+      assert Bank.get_customer_balance(customer.id) == 0
+      assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
+        description: nil,
+        type: "d",
+        value: 1
+      })
+      assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
+        description: "12345678901 more",
+        type: "d",
+        value: 1
+      })
+      assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
+        description: "",
+        type: "d",
+        value: 1
+      })
+      assert Bank.get_customer_balance(customer.id) == 0
+    end
+
     test "create_transaction/1 does not work when over limit" do
       customer = customer_fixture(%{limit: 1})
       assert Bank.get_customer_balance(customer.id) == 0
-      invalid_attrs = %{description: "some description", type: "d", value: 2}
-      assert Bank.get_customer_balance(customer.id) == 0
-
+      invalid_attrs = %{description: "trade", type: "d", value: 2}
       assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, invalid_attrs)
+      assert Bank.get_customer_balance(customer.id) == 0
     end
 
     test "create_transaction/1 is aware of older transactions" do
       customer = customer_fixture(%{limit: 1000})
       assert Bank.get_customer_balance(customer.id) == 0
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
-        description: "some description",
+        description: "trade",
         type: "d",
         value: 200
       })
       assert Bank.get_customer_balance(customer.id) == -200
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
-        description: "some description",
+        description: "trade",
         type: "c",
         value: 100
       })
       assert Bank.get_customer_balance(customer.id) == -100
       assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
-        description: "some description",
+        description: "trade",
         type: "d",
         value: 901
       })
       assert Bank.get_customer_balance(customer.id) == -100
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
-        description: "some description",
+        description: "trade",
         type: "d",
         value: 700
       })
       assert Bank.get_customer_balance(customer.id) == -800
       assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
-        description: "some description",
+        description: "trade",
         type: "d",
         value: 700
       })
       assert Bank.get_customer_balance(customer.id) == -800
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
-        description: "some description",
+        description: "trade",
         type: "c",
         value: 800
       })
       assert Bank.get_customer_balance(customer.id) == 0
       assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
-        description: "some description",
+        description: "trade",
         type: "d",
         value: 1001
       })
       assert Bank.get_customer_balance(customer.id) == 0
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
-        description: "some description",
+        description: "trade",
         type: "d",
         value: 1000
       })

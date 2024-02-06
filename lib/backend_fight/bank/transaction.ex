@@ -18,6 +18,7 @@ defmodule BackendFight.Bank.Transaction do
     |> cast(%{customer_id: customer_id}, [:customer_id])
     |> cast(attrs, [:value, :type, :description, :customer_id])
     |> validate_required([:value, :type, :description, :customer_id])
+    |> validate_length(:description, min: 1, max: 10)
     |> foreign_key_constraint(:customer_id)
   end
 

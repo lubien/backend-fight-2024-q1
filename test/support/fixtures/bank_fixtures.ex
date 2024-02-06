@@ -26,7 +26,7 @@ defmodule BackendFight.BankFixtures do
     {:ok, transaction} =
       attrs
       |> Enum.into(%{
-        description: "some description",
+        description: "trade",
         type: :c,
         value: 42
       })

@@ -11,7 +11,7 @@ defmodule BackendFightWeb.TransactionControllerTest do
     test "renders transaction when data is valid", %{conn: conn} do
       customer = customer_fixture(%{limit: 100})
       conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", transaction: %{
-        description: "some description",
+        description: "trade",
         type: :d,
         value: 42
       })
@@ -21,7 +21,7 @@ defmodule BackendFightWeb.TransactionControllerTest do
     test "renders errors when data is invalid", %{conn: conn} do
       customer = customer_fixture(%{limit: 100})
       conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", transaction: %{
-        description: "some description",
+        description: "trade",
         type: :d,
         value: 101
       })
