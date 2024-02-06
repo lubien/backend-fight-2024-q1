@@ -21,11 +21,11 @@ defmodule BackendFight.Bank.Transaction do
     |> foreign_key_constraint(:customer_id)
   end
 
-  def validate_balance(changeset, balance) do
+  def validate_balance(changeset, balance, limit) do
     validate_change(changeset, :value, fn :value, value ->
       type = get_change(changeset, :type)
-      if type == :d && value > balance do
-        [value: "value cannot go over #{balance}"]
+      if type == :d && (balance - value) < -limit do
+        [value: "value #{(balance - value)} cannot be less than #{-limit}"]
       else
         []
       end

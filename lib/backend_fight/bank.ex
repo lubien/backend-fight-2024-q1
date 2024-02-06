@@ -166,7 +166,7 @@ defmodule BackendFight.Bank do
 
         %Transaction{}
         |> Transaction.changeset(attrs, customer.id)
-        |> Transaction.validate_balance(balance)
+        |> Transaction.validate_balance(balance, customer.limit)
         |> Repo.insert()
       end)
 
@@ -182,7 +182,7 @@ defmodule BackendFight.Bank do
 
     q = from c in Customer,
       where: c.id == ^customer_id,
-      select: fragment("? + coalesce(?, 0)", c.limit, subquery(subquery_balance))
+      select: fragment("coalesce(?, 0)", subquery(subquery_balance))
 
     Repo.one!(q)
   end

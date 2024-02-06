@@ -10,7 +10,6 @@ defmodule BackendFightWeb.CustomerControllerTest do
   describe "show customer" do
     test "renders customer when data is valid", %{conn: conn} do
       %{customer: %{id: id}} = create_customer(%{})
-      id |> IO.inspect(label: "#{__MODULE__}:#{__ENV__.line} #{DateTime.utc_now}", limit: :infinity)
 
       conn = get(conn, ~p"/clientes/#{id}/extrato")
 

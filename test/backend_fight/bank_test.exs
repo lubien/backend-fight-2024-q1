@@ -66,77 +66,80 @@ defmodule BackendFight.BankTest do
 
     test "create_transaction/1 with valid data creates a transaction" do
       customer = customer_fixture(%{limit: 1})
-      assert Bank.get_customer_balance(customer.id) == 1
+      assert Bank.get_customer_balance(customer.id) == 0
 
-      valid_attrs = %{description: "some description", type: "d", value: 1}
-      assert {:ok, %Transaction{} = transaction} = Bank.create_transaction(customer, valid_attrs)
+      assert {:ok, %Transaction{} = transaction} = Bank.create_transaction(customer, %{
+        description: "some description",
+        type: "d",
+        value: 1
+      })
       assert transaction.description == "some description"
       assert transaction.type == :d
       assert transaction.value == 1
 
-      assert Bank.get_customer_balance(customer.id) == 0
+      assert Bank.get_customer_balance(customer.id) == -1
     end
 
     test "create_transaction/1 does not work when over limit" do
       customer = customer_fixture(%{limit: 1})
-      assert Bank.get_customer_balance(customer.id) == 1
+      assert Bank.get_customer_balance(customer.id) == 0
       invalid_attrs = %{description: "some description", type: "d", value: 2}
-      assert Bank.get_customer_balance(customer.id) == 1
+      assert Bank.get_customer_balance(customer.id) == 0
 
       assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, invalid_attrs)
     end
 
     test "create_transaction/1 is aware of older transactions" do
       customer = customer_fixture(%{limit: 1000})
-      assert Bank.get_customer_balance(customer.id) == 1000
+      assert Bank.get_customer_balance(customer.id) == 0
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
         description: "some description",
         type: "d",
         value: 200
       })
-      assert Bank.get_customer_balance(customer.id) == 800
+      assert Bank.get_customer_balance(customer.id) == -200
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
         description: "some description",
         type: "c",
         value: 100
       })
-      assert Bank.get_customer_balance(customer.id) == 900
+      assert Bank.get_customer_balance(customer.id) == -100
       assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
         description: "some description",
         type: "d",
         value: 901
       })
-      assert Bank.get_customer_balance(customer.id) == 900
+      assert Bank.get_customer_balance(customer.id) == -100
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
         description: "some description",
         type: "d",
         value: 700
       })
-      assert Bank.get_customer_balance(customer.id) == 200
+      assert Bank.get_customer_balance(customer.id) == -800
       assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
         description: "some description",
         type: "d",
         value: 700
       })
-      assert Bank.get_customer_balance(customer.id) == 200
+      assert Bank.get_customer_balance(customer.id) == -800
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
         description: "some description",
         type: "c",
         value: 800
       })
-      assert Bank.get_customer_balance(customer.id) == 1000
+      assert Bank.get_customer_balance(customer.id) == 0
       assert {:error, %Ecto.Changeset{}} = Bank.create_transaction(customer, %{
         description: "some description",
         type: "d",
         value: 1001
       })
-      assert Bank.get_customer_balance(customer.id) == 1000
+      assert Bank.get_customer_balance(customer.id) == 0
       assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
         description: "some description",
         type: "d",
         value: 1000
       })
-      assert Bank.get_customer_balance(customer.id) == 0
+      assert Bank.get_customer_balance(customer.id) == -1000
     end
   end
 end
