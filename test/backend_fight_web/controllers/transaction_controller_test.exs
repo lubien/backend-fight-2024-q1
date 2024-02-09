@@ -27,5 +27,56 @@ defmodule BackendFightWeb.TransactionControllerTest do
       })
       assert json_response(conn, 422)
     end
+
+    test "renders errors when value is non integer", %{conn: conn} do
+      customer = customer_fixture(%{limit: 100})
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: "trade",
+        tipo: "d",
+        valor: 1.2
+      })
+      assert json_response(conn, 422)
+    end
+
+    test "renders errors when type in unknown", %{conn: conn} do
+      customer = customer_fixture(%{limit: 100})
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: "trade",
+        tipo: "x",
+        valor: 1
+      })
+      assert json_response(conn, 422)
+    end
+
+
+    test "renders errors when description is long", %{conn: conn} do
+      customer = customer_fixture(%{limit: 100})
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: "trade muito mais que 10",
+        tipo: "d",
+        valor: 1
+      })
+      assert json_response(conn, 422)
+    end
+
+    test "renders errors when description is weird", %{conn: conn} do
+      customer = customer_fixture(%{limit: 100})
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: "",
+        tipo: "c",
+        valor: 1
+      })
+      assert json_response(conn, 422)
+    end
+
+    test "renders errors when description is null", %{conn: conn} do
+      customer = customer_fixture(%{limit: 100})
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: nil,
+        tipo: "c",
+        valor: 1
+      })
+      assert json_response(conn, 422)
+    end
   end
 end
