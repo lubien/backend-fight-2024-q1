@@ -2,10 +2,10 @@ defmodule BackendFightWeb.TransactionJSON do
   @doc """
   Renders a single transaction.
   """
-  def show(%{customer: customer, balance: balance}) do
+  def show(%{customer: customer}) do
     %{
       "limite" => customer.limit,
-      "saldo" => balance
+      "saldo" => customer.balance
     }
   end
 end

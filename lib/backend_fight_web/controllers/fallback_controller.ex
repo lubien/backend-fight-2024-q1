@@ -7,11 +7,18 @@ defmodule BackendFightWeb.FallbackController do
   use BackendFightWeb, :controller
 
   # This clause handles errors returned by Ecto's insert/update/delete.
-  def call(conn, {:error, %Ecto.Changeset{} = changeset}) do
+  def call(conn, {:error, %Ecto.Changeset{}}) do
     conn
     |> put_status(:unprocessable_entity)
-    |> put_view(json: BackendFightWeb.ChangesetJSON)
-    |> render(:error, changeset: changeset)
+    |> put_view(html: BackendFightWeb.ErrorHTML, json: BackendFightWeb.ErrorJSON)
+    |> render(:"422")
+  end
+
+  def call(conn, {:error, :unprocessable_entity}) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> put_view(html: BackendFightWeb.ErrorHTML, json: BackendFightWeb.ErrorJSON)
+    |> render(:"422")
   end
 
   # This clause is an example of how to handle resources that cannot be found.

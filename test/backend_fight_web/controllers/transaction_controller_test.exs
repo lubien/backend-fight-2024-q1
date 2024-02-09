@@ -87,5 +87,13 @@ defmodule BackendFightWeb.TransactionControllerTest do
       })
       assert json_response(conn, 404)
     end
+
+    test "renders errors when weird data comes", %{conn: conn} do
+      customer = customer_fixture(%{limit: 100})
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        azul: "amarelo"
+      })
+      assert json_response(conn, 422)
+    end
   end
 end

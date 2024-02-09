@@ -22,10 +22,8 @@ defmodule BackendFightWeb.TransactionController do
     end
   end
 
-  def create(conn, _params) do
-    conn
-    |> put_status(:unprocessable_entity)
-    |> render("Unprocessable entity")
+  def create(_conn, _params) do
+    {:error, :unprocessable_entity}
   end
 
   def do_create(customer_id, transaction_params) do
