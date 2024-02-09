@@ -12,7 +12,8 @@ defmodule BackendFight.BankFixtures do
       attrs
       |> Enum.into(%{
         limit: 42,
-        name: "some name"
+        name: "some name",
+        balance: 0
       })
       |> BackendFight.Bank.create_customer()
 

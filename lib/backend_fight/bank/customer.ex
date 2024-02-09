@@ -5,6 +5,7 @@ defmodule BackendFight.Bank.Customer do
   schema "customers" do
     field :limit, :integer
     field :name, :string
+    field :balance, :integer, default: 0
   end
 
   @doc false
