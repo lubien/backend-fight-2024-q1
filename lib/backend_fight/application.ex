@@ -7,13 +7,20 @@ defmodule BackendFight.Application do
 
   @impl true
   def start(_type, _args) do
+    if System.get_env("PRIMARY_REGION") == System.get_env("MY_REGION") do
+      BackendFight.Release.migrate()
+    end
+
     children = [
       BackendFightWeb.Telemetry,
       BackendFight.Repo,
       {Ecto.Migrator,
         repos: Application.fetch_env!(:backend_fight, :ecto_repos),
         skip: skip_migrations?()},
-      {DNSCluster, query: Application.get_env(:backend_fight, :dns_cluster_query) || :ignore},
+      {Fly.RPC, []},
+      {DNSCluster,
+        resolver: BackendFight.DNSClusterResolver,
+        query: Application.get_env(:backend_fight, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: BackendFight.PubSub},
       # Start a worker by calling: BackendFight.Worker.start_link(arg)
       # {BackendFight.Worker, arg},

@@ -78,5 +78,14 @@ defmodule BackendFightWeb.TransactionControllerTest do
       })
       assert json_response(conn, 422)
     end
+
+    test "renders errors when customer does not exist", %{conn: conn} do
+      conn = post(conn, ~p"/clientes/100/transacoes", %{
+        descricao: "peguei",
+        tipo: "c",
+        valor: 1
+      })
+      assert json_response(conn, 404)
+    end
   end
 end

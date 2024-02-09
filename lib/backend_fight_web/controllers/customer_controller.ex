@@ -6,7 +6,7 @@ defmodule BackendFightWeb.CustomerController do
   action_fallback BackendFightWeb.FallbackController
 
   def show(conn, %{"id" => id}) do
-    case Bank.get_customer_data(id) do
+    case Fly.RPC.rpc_primary({Bank, :get_customer_data, [id]}) do
       nil ->
         {:error, :not_found}
 

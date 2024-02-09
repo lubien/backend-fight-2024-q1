@@ -208,6 +208,9 @@ defmodule BackendFight.Bank do
     |> Transaction.changeset(attrs, customer_id)
     |> Repo.insert()
   rescue
+    _e in Ecto.ConstraintError ->
+      {:error, :not_found}
+
     _e in Exqlite.Error ->
       {:error, %Transaction{}
       |> Transaction.changeset(attrs, customer_id)

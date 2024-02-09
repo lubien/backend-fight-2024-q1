@@ -6,20 +6,19 @@ defmodule BackendFightWeb.TransactionController do
 
   action_fallback BackendFightWeb.FallbackController
 
-  def create(conn, %{"customer_id" => customer_id, "descricao" => descricao, "tipo" => tipo, "valor" => valor}) do
+  def create(conn, %{
+        "customer_id" => customer_id,
+        "descricao" => descricao,
+        "tipo" => tipo,
+        "valor" => valor
+      }) do
     transaction_params = %{description: descricao, type: tipo, value: valor}
 
-    case Bank.get_customer(customer_id) do
-      nil ->
-        {:error, :not_found}
-      customer ->
-        with {:ok, %Transaction{} = _transaction} <- Bank.create_transaction(customer, transaction_params) do
-          balance = Bank.get_customer_balance(customer.id)
-
-          conn
-          |> put_status(:ok) # yes, that's by the spec 😨
-          |> render(:show, customer: customer, balance: balance)
-        end
+    with {:ok, customer} <- do_create(customer_id, transaction_params) do
+      conn
+      # yes, that's by the spec 😨
+      |> put_status(:ok)
+      |> render(:show, customer: customer, balance: customer.balance)
     end
   end
 
@@ -27,5 +26,15 @@ defmodule BackendFightWeb.TransactionController do
     conn
     |> put_status(:unprocessable_entity)
     |> render("Unprocessable entity")
+  end
+
+  def do_create(customer_id, transaction_params) do
+    Fly.RPC.rpc_primary(fn ->
+      with {:ok, %Transaction{} = _transaction} <-
+             Bank.create_transaction(%{id: customer_id}, transaction_params) do
+        customer = Bank.get_customer(customer_id)
+        {:ok, customer}
+      end
+    end)
   end
 end
