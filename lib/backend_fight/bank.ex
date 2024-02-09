@@ -203,24 +203,19 @@ defmodule BackendFight.Bank do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_transaction(customer, attrs \\ %{}) do
-    res =
-      Repo.transaction(fn ->
-        balance = get_customer_balance(customer.id)
-
-        %Transaction{}
-        |> Transaction.changeset(attrs, customer.id)
-        |> Transaction.validate_balance(balance, customer.limit)
-        |> Repo.insert()
-      end)
-
-    with {:ok, res} <- res do
-      res
-    end
+  def create_transaction(%{id: customer_id}, attrs \\ %{}) do
+    %Transaction{}
+    |> Transaction.changeset(attrs, customer_id)
+    |> Repo.insert()
+  rescue
+    _e in Exqlite.Error ->
+      {:error, %Transaction{}
+      |> Transaction.changeset(attrs, customer_id)
+      |> Ecto.Changeset.add_error(:customer_id, "Invalid balance")}
   end
 
   def get_customer_balance(customer_id) do
-    Repo.one!(query_get_balance(customer_id))
+    Repo.get(Customer, customer_id).balance
   end
 
   defp query_get_balance(customer_id) do
