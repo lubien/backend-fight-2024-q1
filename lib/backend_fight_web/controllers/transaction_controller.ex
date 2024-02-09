@@ -6,7 +6,9 @@ defmodule BackendFightWeb.TransactionController do
 
   action_fallback BackendFightWeb.FallbackController
 
-  def create(conn, %{"customer_id" => customer_id, "transaction" => transaction_params}) do
+  def create(conn, %{"customer_id" => customer_id, "descricao" => descricao, "tipo" => tipo, "valor" => valor}) do
+    transaction_params = %{description: descricao, type: tipo, value: valor}
+
     case Bank.get_customer(customer_id) do
       nil ->
         {:error, :not_found}
@@ -19,5 +21,11 @@ defmodule BackendFightWeb.TransactionController do
           |> render(:show, customer: customer, balance: balance)
         end
     end
+  end
+
+  def create(conn, _params) do
+    conn
+    |> put_status(:unprocessable_entity)
+    |> render("Unprocessable entity")
   end
 end
