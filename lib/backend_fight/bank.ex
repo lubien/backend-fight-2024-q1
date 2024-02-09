@@ -31,7 +31,8 @@ defmodule BackendFight.Bank do
         descricao: subquery(balance_subquery),
         realizada_em: "now"
       },
-      union_all: ^values_query
+      union_all: ^values_query,
+      where: c.id == ^id
 
     case Repo.all(customer_query) do
       [%{value: limite, descricao: saldo} | transactions] ->
