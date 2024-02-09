@@ -2,7 +2,6 @@ defmodule BackendFightWeb.CustomerControllerTest do
   use BackendFightWeb.ConnCase
 
   alias BackendFight.Bank
-  alias BackendFight.Bank.Transaction
   import BackendFight.BankFixtures
 
   setup %{conn: conn} do
@@ -10,30 +9,42 @@ defmodule BackendFightWeb.CustomerControllerTest do
   end
 
   describe "show customer" do
+    test "renders customer when customer is fresh", %{conn: conn} do
+      customer = customer_fixture(%{limit: 123})
+      assert Bank.get_customer_balance(customer.id) == 0
+      conn = get(conn, ~p"/clientes/#{customer.id}/extrato")
+
+      assert %{
+               "saldo" => %{
+                 "total" => 0,
+                 "limite" => 123
+               },
+               "ultimas_transacoes" => []
+             } = json_response(conn, 200)
+    end
+
     test "renders customer when data is valid", %{conn: conn} do
       customer = customer_fixture(%{limit: 1000})
       assert Bank.get_customer_balance(customer.id) == 0
 
-      assert {:ok, %Transaction{} = _transaction} =
-               Bank.create_transaction(customer, %{
-                 description: "trade",
-                 type: "d",
-                 value: 200
-               })
-
-      assert {:ok, %Transaction{} = _transaction} =
-               Bank.create_transaction(customer, %{
-                 description: "trade",
-                 type: "c",
-                 value: 100
-               })
-
-      assert {:ok, %Transaction{} = _transaction} =
-               Bank.create_transaction(customer, %{
-                 description: "trade",
-                 type: "d",
-                 value: 700
-               })
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: "trade 1",
+        tipo: "d",
+        valor: 200
+      })
+      assert %{"limite" => 1000, "saldo" => -200} = json_response(conn, 200)
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: "trade 2",
+        tipo: "c",
+        valor: 100
+      })
+      assert %{"limite" => 1000, "saldo" => -100} = json_response(conn, 200)
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: "trade 3",
+        tipo: "d",
+        valor: 700
+      })
+      assert %{"limite" => 1000, "saldo" => -800} = json_response(conn, 200)
 
       assert Bank.get_customer_balance(customer.id) == -800
 
@@ -46,19 +57,19 @@ defmodule BackendFightWeb.CustomerControllerTest do
                },
                "ultimas_transacoes" => [
                  %{
-                   "descricao" => "trade",
+                   "descricao" => "trade 3",
                    "tipo" => "d",
-                   "value" => 700
+                   "valor" => 700
                  },
                  %{
-                   "descricao" => "trade",
+                   "descricao" => "trade 2",
                    "tipo" => "c",
-                   "value" => 100
+                   "valor" => 100
                  },
                  %{
-                   "descricao" => "trade",
+                   "descricao" => "trade 1",
                    "tipo" => "d",
-                   "value" => 200
+                   "valor" => 200
                  }
                ]
              } = json_response(conn, 200)

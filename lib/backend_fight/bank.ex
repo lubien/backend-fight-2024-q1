@@ -13,7 +13,7 @@ defmodule BackendFight.Bank do
     values_query = from t in Transaction,
       select: %{
         id: t.id,
-        value: t.value,
+        valor: t.value,
         tipo: t.type,
         descricao: t.description,
         realizada_em: t.inserted_at
@@ -26,7 +26,7 @@ defmodule BackendFight.Bank do
     customer_query = from c in Customer,
       select: %{
         id: c.id,
-        value: c.limit,
+        valor: c.limit,
         tipo: "tipo",
         descricao: subquery(balance_subquery),
         realizada_em: "now"
@@ -35,7 +35,7 @@ defmodule BackendFight.Bank do
       where: c.id == ^id
 
     case Repo.all(customer_query) do
-      [%{value: limite, descricao: saldo} | transactions] ->
+      [%{valor: limite, descricao: saldo} | transactions] ->
         %{
           saldo: %{
             total: saldo,
