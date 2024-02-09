@@ -10,20 +10,20 @@ defmodule BackendFightWeb.TransactionControllerTest do
   describe "create transaction" do
     test "renders transaction when data is valid", %{conn: conn} do
       customer = customer_fixture(%{limit: 100})
-      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", transaction: %{
-        description: "trade",
-        type: :d,
-        value: 42
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: "trade",
+        tipo: :d,
+        valor: 42
       })
       assert %{"limite" => 100, "saldo" => -42} = json_response(conn, 200)
     end
 
     test "renders errors when data is invalid", %{conn: conn} do
       customer = customer_fixture(%{limit: 100})
-      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", transaction: %{
-        description: "trade",
-        type: :d,
-        value: 101
+      conn = post(conn, ~p"/clientes/#{customer.id}/transacoes", %{
+        descricao: "trade",
+        tipo: :d,
+        valor: 101
       })
       assert json_response(conn, 422)
     end
