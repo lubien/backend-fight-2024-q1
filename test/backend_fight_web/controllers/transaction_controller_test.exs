@@ -15,7 +15,7 @@ defmodule BackendFightWeb.TransactionControllerTest do
         type: :d,
         value: 42
       })
-      assert %{"id" => _id} = json_response(conn, 201)["data"]
+      assert %{"limite" => 100, "saldo" => -42} = json_response(conn, 200)
     end
 
     test "renders errors when data is invalid", %{conn: conn} do

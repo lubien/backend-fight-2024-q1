@@ -11,10 +11,12 @@ defmodule BackendFightWeb.TransactionController do
       nil ->
         {:error, :not_found}
       customer ->
-        with {:ok, %Transaction{} = transaction} <- Bank.create_transaction(customer, transaction_params) do
+        with {:ok, %Transaction{} = _transaction} <- Bank.create_transaction(customer, transaction_params) do
+          balance = Bank.get_customer_balance(customer.id)
+
           conn
-          |> put_status(:created)
-          |> render(:show, transaction: transaction)
+          |> put_status(:ok) # yes, that's by the spec 😨
+          |> render(:show, customer: customer, balance: balance)
         end
     end
   end

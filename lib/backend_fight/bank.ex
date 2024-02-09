@@ -4,9 +4,52 @@ defmodule BackendFight.Bank do
   """
 
   import Ecto.Query, warn: false
+  alias BackendFight.Bank.Transaction
   alias BackendFight.Repo
 
   alias BackendFight.Bank.Customer
+
+  def get_customer_data(id) do
+    values_query = from t in Transaction,
+      select: %{
+        id: t.id,
+        value: t.value,
+        tipo: t.type,
+        descricao: t.description,
+        realizada_em: t.inserted_at
+      },
+      order_by: [desc: t.inserted_at, desc: t.id],
+      limit: 10
+
+    balance_subquery = query_get_balance(id)
+
+    customer_query = from c in Customer,
+      select: %{
+        id: c.id,
+        value: c.limit,
+        tipo: "tipo",
+        descricao: subquery(balance_subquery),
+        realizada_em: "now"
+      },
+      union_all: ^values_query
+
+    case Repo.all(customer_query) do
+      [%{value: limite, descricao: saldo} | transactions] ->
+        %{
+          saldo: %{
+            total: saldo,
+            limite: limite,
+            data_extrato: DateTime.utc_now() |> DateTime.to_string(),
+          },
+          ultimas_transacoes:
+            transactions
+            |> Enum.map(&Map.drop(&1, [:id]))
+        }
+
+      [] ->
+        nil
+    end
+  end
 
   @doc """
   Returns the list of customers.
@@ -176,15 +219,17 @@ defmodule BackendFight.Bank do
   end
 
   def get_customer_balance(customer_id) do
+    Repo.one!(query_get_balance(customer_id))
+  end
+
+  defp query_get_balance(customer_id) do
     subquery_balance = from t in Transaction,
       where: t.customer_id == ^customer_id,
       select: sum(fragment("case when ? = 'c' then ? else ? end", t.type, t.value, -t.value))
 
-    q = from c in Customer,
+    from c in Customer,
       where: c.id == ^customer_id,
       select: fragment("coalesce(?, 0)", subquery(subquery_balance))
-
-    Repo.one!(q)
   end
 
   @doc """
