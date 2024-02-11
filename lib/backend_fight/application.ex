@@ -7,9 +7,7 @@ defmodule BackendFight.Application do
 
   @impl true
   def start(_type, _args) do
-    if System.get_env("PRIMARY_REGION") == System.get_env("MY_REGION") do
-      BackendFight.Release.migrate()
-    end
+    BackendFight.Release.migrate()
 
     children = [
       {Cachex, name: :customer_cache},
