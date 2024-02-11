@@ -9,7 +9,8 @@ import Config
 
 config :backend_fight,
   ecto_repos: [BackendFight.Repo],
-  generators: [timestamp_type: :utc_datetime]
+  generators: [timestamp_type: :utc_datetime],
+  test?: false
 
 # Configures the endpoint
 config :backend_fight, BackendFightWeb.Endpoint,

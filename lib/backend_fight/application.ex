@@ -12,7 +12,7 @@ defmodule BackendFight.Application do
     end
 
     children = [
-      BackendFightWeb.Telemetry,
+      {Cachex, name: :customer_cache},
       BackendFight.Repo,
       {Ecto.Migrator,
         repos: Application.fetch_env!(:backend_fight, :ecto_repos),
