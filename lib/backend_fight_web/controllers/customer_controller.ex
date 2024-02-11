@@ -7,12 +7,10 @@ defmodule BackendFightWeb.CustomerController do
   action_fallback BackendFightWeb.FallbackController
 
   def show(conn, %{"id" => id}) do
-    case get_customer(id) do
-      nil ->
-        {:error, :not_found}
-
-      customer_data ->
-        render(conn, :show, customer_data: customer_data)
+    if customer_data = get_customer(id) do
+      render(conn, :show, customer_data: customer_data)
+    else
+      {:error, :not_found}
     end
   end
 
@@ -20,7 +18,7 @@ defmodule BackendFightWeb.CustomerController do
     if data = CustomerCache.get_customer_cache(id) do
       data
     else
-      Fly.RPC.rpc_region(Bank.region_for_customer(id), {Bank, :get_customer_data, [id]})
+      Fly.RPC.rpc_primary({Bank, :get_customer_data, [id]})
     end
   end
 end

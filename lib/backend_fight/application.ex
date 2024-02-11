@@ -7,25 +7,35 @@ defmodule BackendFight.Application do
 
   @impl true
   def start(_type, _args) do
-    BackendFight.Release.migrate()
+    if Fly.RPC.is_primary?() do
+      BackendFight.Release.migrate()
+    end
+
+    extra_children =
+      if Fly.RPC.is_primary?() do
+        [
+          BackendFight.Repo,
+          {Ecto.Migrator,
+           repos: Application.fetch_env!(:backend_fight, :ecto_repos), skip: skip_migrations?()},
+          {BackendFight.CustomerCache, []},
+          {BackendFight.BackCollectorSupervisor, []}
+        ]
+      else
+        []
+      end
 
     children = [
       {Cachex, name: :customer_cache},
-      BackendFight.Repo,
-      {Ecto.Migrator,
-        repos: Application.fetch_env!(:backend_fight, :ecto_repos),
-        skip: skip_migrations?()},
       {Fly.RPC, []},
       {DNSCluster,
-        resolver: BackendFight.DNSClusterResolver,
-        query: Application.get_env(:backend_fight, :dns_cluster_query) || :ignore},
+       resolver: BackendFight.DNSClusterResolver,
+       query: Application.get_env(:backend_fight, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: BackendFight.PubSub},
-      {BackendFight.CustomerCache, []},
       # Start a worker by calling: BackendFight.Worker.start_link(arg)
       # {BackendFight.Worker, arg},
       # Start to serve requests, typically the last entry
       BackendFightWeb.Endpoint
-    ]
+    ] ++ extra_children
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

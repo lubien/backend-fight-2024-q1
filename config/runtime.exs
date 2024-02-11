@@ -22,11 +22,7 @@ end
 
 if config_env() == :prod do
   database_path =
-    System.get_env("DATABASE_PATH") ||
-      raise """
-      environment variable DATABASE_PATH is missing.
-      For example: /etc/backend_fight/backend_fight.db
-      """
+    System.get_env("DATABASE_PATH")
 
   config :backend_fight, BackendFight.Repo,
     database: database_path,
