@@ -68,7 +68,7 @@ defmodule BackendFight.BankTest do
       customer = customer_fixture(%{limit: 1})
       assert Bank.get_customer_balance(customer.id) == 0
 
-      assert {:ok, %Transaction{} = transaction} = Bank.create_transaction(customer, %{
+      assert {:ok, %Transaction{} = transaction, _new_balance} = Bank.create_transaction(customer, %{
         description: "trade",
         type: "d",
         value: 1
@@ -123,13 +123,13 @@ defmodule BackendFight.BankTest do
     test "create_transaction/1 is aware of older transactions" do
       customer = customer_fixture(%{limit: 1000})
       assert Bank.get_customer_balance(customer.id) == 0
-      assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
+      assert {:ok, %Transaction{} = _transaction, _new_balance} = Bank.create_transaction(customer, %{
         description: "trade",
         type: "d",
         value: 200
       })
       assert Bank.get_customer_balance(customer.id) == -200
-      assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
+      assert {:ok, %Transaction{} = _transaction, _new_balance} = Bank.create_transaction(customer, %{
         description: "trade",
         type: "c",
         value: 100
@@ -141,7 +141,7 @@ defmodule BackendFight.BankTest do
         value: 901
       })
       assert Bank.get_customer_balance(customer.id) == -100
-      assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
+      assert {:ok, %Transaction{} = _transaction, _new_balance} = Bank.create_transaction(customer, %{
         description: "trade",
         type: "d",
         value: 700
@@ -153,7 +153,7 @@ defmodule BackendFight.BankTest do
         value: 700
       })
       assert Bank.get_customer_balance(customer.id) == -800
-      assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
+      assert {:ok, %Transaction{} = _transaction, _new_balance} = Bank.create_transaction(customer, %{
         description: "trade",
         type: "c",
         value: 800
@@ -165,7 +165,7 @@ defmodule BackendFight.BankTest do
         value: 1001
       })
       assert Bank.get_customer_balance(customer.id) == 0
-      assert {:ok, %Transaction{} = _transaction} = Bank.create_transaction(customer, %{
+      assert {:ok, %Transaction{} = _transaction, _new_balance} = Bank.create_transaction(customer, %{
         description: "trade",
         type: "d",
         value: 1000
