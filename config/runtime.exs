@@ -31,6 +31,8 @@ if config_env() == :prod do
   config :backend_fight, BackendFight.Repo,
     database: database_path,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "25"),
+    busy_timeout: 30_000,
+    auto_vacuum: :full,
     cache_size: 10_000
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
