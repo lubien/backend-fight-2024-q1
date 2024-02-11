@@ -90,19 +90,6 @@ defmodule BackendFight.Bank do
   end
 
   @doc """
-  Returns the list of customers.
-
-  ## Examples
-
-      iex> list_customers()
-      [%Customer{}, ...]
-
-  """
-  def list_customers do
-    Repo.all(Customer)
-  end
-
-  @doc """
   Gets a single customer.
 
   Raises `Ecto.NoResultsError` if the Customer does not exist.
@@ -148,40 +135,6 @@ defmodule BackendFight.Bank do
     %Customer{}
     |> Customer.changeset(attrs)
     |> Repo.insert()
-  end
-
-  @doc """
-  Updates a customer.
-
-  ## Examples
-
-      iex> update_customer(customer, %{field: new_value})
-      {:ok, %Customer{}}
-
-      iex> update_customer(customer, %{field: bad_value})
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def update_customer(%Customer{} = customer, attrs) do
-    customer
-    |> Customer.changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
-  Deletes a customer.
-
-  ## Examples
-
-      iex> delete_customer(customer)
-      {:ok, %Customer{}}
-
-      iex> delete_customer(customer)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def delete_customer(%Customer{} = customer) do
-    Repo.delete(customer)
   end
 
   @doc """
@@ -319,34 +272,5 @@ defmodule BackendFight.Bank do
 
   def get_customer_balance(customer_id) do
     Repo.get(Customer, customer_id).balance
-  end
-
-  @doc """
-  Deletes a transaction.
-
-  ## Examples
-
-      iex> delete_transaction(transaction)
-      {:ok, %Transaction{}}
-
-      iex> delete_transaction(transaction)
-      {:error, %Ecto.Changeset{}}
-
-  """
-  def delete_transaction(%Transaction{} = transaction) do
-    Repo.delete(transaction)
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking transaction changes.
-
-  ## Examples
-
-      iex> change_transaction(transaction)
-      %Ecto.Changeset{data: %Transaction{}}
-
-  """
-  def change_transaction(%Transaction{} = transaction, attrs \\ %{}) do
-    Transaction.changeset(transaction, attrs, nil)
   end
 end
