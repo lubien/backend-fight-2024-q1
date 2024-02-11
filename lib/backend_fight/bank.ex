@@ -87,7 +87,6 @@ defmodule BackendFight.Bank do
           saldo: %{
             total: String.to_integer(saldo),
             limite: limite,
-            data_extrato: DateTime.utc_now() |> DateTime.to_string(),
           },
           ultimas_transacoes:
             transactions
