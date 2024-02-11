@@ -38,8 +38,8 @@ defmodule BackendFightWeb do
   def controller do
     quote do
       use Phoenix.Controller,
-        formats: [:html, :json],
-        layouts: [html: BackendFightWeb.Layouts]
+        formats: [:json]
+        # layouts: [html: BackendFightWeb.Layouts]
 
       import Plug.Conn
 
