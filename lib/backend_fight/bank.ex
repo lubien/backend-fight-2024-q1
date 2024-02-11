@@ -10,23 +10,7 @@ defmodule BackendFight.Bank do
   require Logger
   alias BackendFight.Bank.Transaction
   alias BackendFight.Repo
-
   alias BackendFight.Bank.Customer
-
-  def region_for_customer(customer_id) when is_binary(customer_id) do
-    region_for_customer(String.to_integer(customer_id))
-  end
-  def region_for_customer(customer_id) when is_integer(customer_id) do
-    if Application.fetch_env!(:backend_fight, :test?) do
-      Fly.RPC.my_region()
-    else
-      if rem(customer_id, 2) == 0 do
-        "replica"
-      else
-        "primary"
-      end
-    end
-  end
 
   def get_customer_data(id) when is_binary(id) do
     case Integer.parse(id) do
