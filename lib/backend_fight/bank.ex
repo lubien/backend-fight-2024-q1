@@ -28,6 +28,14 @@ defmodule BackendFight.Bank do
     end
   end
 
+  def get_customer_data(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {id, ""} ->
+        get_customer_data(id)
+      _ ->
+        nil
+    end
+  end
   def get_customer_data(id) do
     if Application.fetch_env!(:backend_fight, :test?) do
       do_get_customer_data(id)
