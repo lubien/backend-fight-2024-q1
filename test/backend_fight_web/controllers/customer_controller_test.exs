@@ -2,6 +2,7 @@ defmodule BackendFightWeb.CustomerControllerTest do
   use BackendFightWeb.ConnCase
 
   alias BackendFight.Bank
+  alias BackendFight.CustomerCache
   import BackendFight.BankFixtures
 
   setup %{conn: conn} do
@@ -12,6 +13,7 @@ defmodule BackendFightWeb.CustomerControllerTest do
     test "renders customer when customer is fresh", %{conn: conn} do
       customer = customer_fixture(%{limit: 123})
       assert Bank.get_customer_balance(customer.id) == 0
+      CustomerCache.clear_all_caches()
       conn = get(conn, ~p"/clientes/#{customer.id}/extrato")
 
       assert %{
@@ -76,7 +78,7 @@ defmodule BackendFightWeb.CustomerControllerTest do
     end
 
     test "renders errors when customer is not found", %{conn: conn} do
-      conn = get(conn, ~p"/clientes/6/extrato")
+      conn = get(conn, ~p"/clientes/600/extrato")
       assert json_response(conn, 404)
     end
   end

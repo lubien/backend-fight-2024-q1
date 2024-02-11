@@ -4,6 +4,8 @@ defmodule BackendFight.Bank do
   """
   @warning_diff_ms 50
 
+  alias BackendFight.CustomerCache
+
   import Ecto.Query, warn: false
   require Logger
   alias BackendFight.Bank.Transaction
@@ -30,7 +32,7 @@ defmodule BackendFight.Bank do
     if Application.fetch_env!(:backend_fight, :test?) do
       do_get_customer_data(id)
     else
-      res = Cachex.fetch(:customer_cache, id, fn key ->
+      res = CustomerCache.fetch_customer_cache(id, fn key ->
         Logger.info("❌ CACHE MISS")
         case do_get_customer_data(key) do
           nil ->
@@ -58,8 +60,6 @@ defmodule BackendFight.Bank do
       },
       order_by: [desc: t.inserted_at, desc: t.id],
       limit: 10
-
-    balance_subquery = query_get_balance(id)
 
     customer_query = from c in Customer,
       select: %{
@@ -254,9 +254,9 @@ defmodule BackendFight.Bank do
       if Application.fetch_env!(:backend_fight, :test?) do
         Cachex.del!(:customer_cache, customer.id)
       end
-      Cachex.get_and_update!(:customer_cache, customer.id, fn
+      CustomerCache.get_and_update_customer_cache!(customer.id, fn
         %{saldo: saldo, ultimas_transacoes: ultimas_transacoes} ->
-          Logger.info("🔥 CACHE UPDATE")
+          # Logger.info("🔥 CACHE UPDATE")
           {:commit, %{
             saldo: %{saldo | total: new_balance},
             ultimas_transacoes: Enum.take([%{
@@ -295,12 +295,12 @@ defmodule BackendFight.Bank do
     case changeset do
       %Ecto.Changeset{valid?: true} ->
         data = Ecto.Changeset.apply_changes(changeset)
-        params = [data.description, Atom.to_string(data.type), data.value, data.customer_id, DateTime.utc_now(), data.customer_id]
+        params = [data.description, Atom.to_string(data.type), data.value, data.customer_id]
 
         transaction = Repo.query!("""
           INSERT INTO transactions("description", "type", "value", "customer_id", "inserted_at")
-          VALUES (?, ?, ?, ?, ?)
-          RETURNING id, (select balance from customers where id = ?)
+          VALUES ($1, $2, $3, $4, DATETIME('now'))
+          RETURNING id, (select balance from customers where id = $4)
         """, params)
 
         %Exqlite.Result{rows: [[id, new_balance]]} = transaction
