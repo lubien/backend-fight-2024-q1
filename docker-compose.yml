@@ -23,7 +23,7 @@ services:
       resources:
         limits:
           cpus: "0.85"
-          memory: "270MB"
+          memory: "256MB"
     networks:
       erlcluster:
         ipv4_address: 192.0.1.11
@@ -44,8 +44,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.50"
-          memory: "270MB"
+          cpus: "0.30"
+          memory: "147MB"
     networks:
       erlcluster:
         ipv4_address: 192.0.1.12
@@ -62,8 +62,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.15"
-          memory: "10MB"
+          cpus: "0.35"
+          memory: "147MB"
     networks:
       erlcluster:
 

@@ -24,8 +24,8 @@ defmodule BackendFight.BankCollector do
   end
 
   defp schedule_work do
-    # Process the queue every 10 seconds
-    Process.send_after(self(), :work, 10_000)
+    # Process the queue every 15 seconds
+    Process.send_after(self(), :work, 15_000)
   end
 
   def handle_info(:work, queue) do

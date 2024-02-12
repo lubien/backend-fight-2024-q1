@@ -10,3 +10,7 @@
 +sbwt none
 +sbwtdcpu none
 +sbwtdio none
++A 128
++c true
++C multi_time_warp
++sub true
