@@ -1,7 +1,6 @@
 defmodule BackendFightWeb.TransactionController do
   use BackendFightWeb, :controller
 
-  alias BackendFight.CustomerCache
   alias BackendFight.Bank
 
   action_fallback BackendFightWeb.FallbackController
@@ -14,12 +13,11 @@ defmodule BackendFightWeb.TransactionController do
       }) do
     transaction_params = %{description: descricao, type: tipo, value: valor}
 
-    with %{saldo: saldo} = customer_data <- do_create(customer_id, transaction_params) do
-      CustomerCache.set_customer_cache(customer_id, customer_data)
+    with %{total: total, limite: limite} = _customer_data <- do_create(customer_id, transaction_params) do
       conn
       # yes, that's by the spec 😨
       |> put_status(:ok)
-      |> render(:show, customer: %{limit: saldo.limite, balance: saldo.total})
+      |> render(:show, customer: %{limit: limite, balance: total})
     end
   end
 

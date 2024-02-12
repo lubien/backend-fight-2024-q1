@@ -128,29 +128,32 @@ defmodule BackendFight.Bank do
         CustomerCache.clear_all_caches()
         BankCollector.schedule_work_now()
       end
-      CustomerCache.get_and_update_customer_cache!(String.to_integer(customer.id), fn found ->
-        customer =
-          case found do
-            %{saldo: _saldo, ultimas_transacoes: _ultimas_transacoes} ->
-              found
-            nil ->
-              Logger.info("❌ CACHE MISS")
-              get_customer_data(customer.id)
-          end
+      %{saldo: saldo} =
+        CustomerCache.get_and_update_customer_cache!(String.to_integer(customer.id), fn found ->
+          customer =
+            case found do
+              %{saldo: _saldo, ultimas_transacoes: _ultimas_transacoes} ->
+                found
+              nil ->
+                Logger.info("❌ CACHE MISS")
+                get_customer_data(customer.id)
+            end
 
-        %{saldo: saldo, ultimas_transacoes: ultimas_transacoes} = customer
-        # Logger.info("🔥 CACHE UPDATE")
-        {:commit, %{
-          saldo: %{saldo | total: new_balance},
-          ultimas_transacoes: Enum.take([%{
-            id: transaction.id,
-            valor: transaction.value,
-            tipo: transaction.type,
-            descricao: transaction.description,
-            realizada_em: transaction.inserted_at
-          } | ultimas_transacoes], 10)
-        }}
-      end)
+          %{saldo: saldo, ultimas_transacoes: ultimas_transacoes} = customer
+          # Logger.info("🔥 CACHE UPDATE")
+          {:commit, %{
+            saldo: %{saldo | total: new_balance},
+            ultimas_transacoes: Enum.take([%{
+              id: transaction.id,
+              valor: transaction.value,
+              tipo: transaction.type,
+              descricao: transaction.description,
+              realizada_em: transaction.inserted_at
+            } | ultimas_transacoes], 10)
+          }}
+        end)
+
+      saldo
     end
   end
 
@@ -158,7 +161,6 @@ defmodule BackendFight.Bank do
     s = DateTime.utc_now()
 
     res = do_create_transaction(customer, attrs)
-    # res = {:ok, %Transaction{}}
 
     diff = DateTime.diff(DateTime.utc_now(), s, :millisecond)
     if diff > @warning_diff_ms do
