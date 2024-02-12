@@ -45,6 +45,7 @@ defmodule BackendFight.MixProject do
       {:fly_rpc, "~> 0.3.0"},
       {:cachex, "~> 3.6"},
       {:qex, "~> 0.5"},
+      {:litefs, git: "https://git.sr.ht/~sheertj/elixir_litefs"},
       {:bandit, "~> 1.2"}
     ]
   end

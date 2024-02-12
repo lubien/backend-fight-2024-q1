@@ -194,27 +194,8 @@ defmodule BackendFight.Bank do
 
   """
   def create_transaction_and_return_customer(customer, attrs) do
-    with {:ok, transaction, new_balance} <- create_transaction(customer, attrs) do
-      if Application.fetch_env!(:backend_fight, :test?) do
-        Cachex.del!(:customer_cache, customer.id)
-      end
-      CustomerCache.get_and_update_customer_cache!(customer.id, fn
-        %{saldo: saldo, ultimas_transacoes: ultimas_transacoes} ->
-          # Logger.info("🔥 CACHE UPDATE")
-          {:commit, %{
-            saldo: %{saldo | total: new_balance},
-            ultimas_transacoes: Enum.take([%{
-              id: transaction.id,
-              valor: transaction.value,
-              tipo: transaction.type,
-              descricao: transaction.description,
-              realizada_em: transaction.inserted_at
-            } | ultimas_transacoes], 10)
-          }}
-        _ ->
-          Logger.info("❌ CACHE MISS")
-          {:commit, do_get_customer_data(customer.id)}
-      end)
+    with {:ok, _transaction} <- create_transaction(customer, attrs) do
+      do_get_customer_data(customer.id)
     end
   end
 
@@ -222,7 +203,6 @@ defmodule BackendFight.Bank do
     s = DateTime.utc_now()
 
     res = do_create_transaction(customer, attrs)
-    # res = {:ok, %Transaction{}}
 
     diff = DateTime.diff(DateTime.utc_now(), s, :millisecond)
     if diff > @warning_diff_ms do
@@ -233,40 +213,19 @@ defmodule BackendFight.Bank do
   end
 
   defp do_create_transaction(%{id: customer_id}, attrs) do
-    changeset = %Transaction{}
+    %Transaction{}
     |> Transaction.changeset(attrs, customer_id)
-
-    case changeset do
-      %Ecto.Changeset{valid?: true} ->
-        data = Ecto.Changeset.apply_changes(changeset)
-        params = [data.description, Atom.to_string(data.type), data.value, data.customer_id]
-
-        transaction = Repo.query!("""
-          INSERT INTO transactions("description", "type", "value", "customer_id", "inserted_at")
-          VALUES ($1, $2, $3, $4, DATETIME('now'))
-          RETURNING id, (select balance from customers where id = $4)
-        """, params)
-
-        %Exqlite.Result{rows: [[id, new_balance]]} = transaction
-
-        {:ok, %Transaction{data | id: id}, new_balance}
-
-      _ ->
-        {:error, changeset}
-    end
+    |> Repo.insert(wait: false)
   rescue
     _e in Ecto.ConstraintError ->
       {:error, :not_found}
 
     e in Exqlite.Error ->
       case e do
-        %Exqlite.Error{message: "FOREIGN KEY constraint failed"} ->
-          {:error, :not_found}
-
-        _ ->
+        %{message: "Invalid value" = message} ->
           {:error, %Transaction{}
           |> Transaction.changeset(attrs, customer_id)
-          |> Ecto.Changeset.add_error(:customer_id, "Invalid balance")}
+          |> Ecto.Changeset.add_error(:value, message)}
       end
   end
 

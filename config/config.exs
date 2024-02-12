@@ -8,7 +8,7 @@
 import Config
 
 config :backend_fight,
-  ecto_repos: [BackendFight.Repo],
+  ecto_repos: [BackendFight.Repo.Local],
   generators: [timestamp_type: :utc_datetime],
   test?: false
 

@@ -24,8 +24,15 @@ if config_env() == :prod do
   database_path =
     System.get_env("DATABASE_PATH")
 
-  config :backend_fight, BackendFight.Repo,
+  config :backend_fight, BackendFight.Repo.Local,
+    priv: "priv/repo",
     database: database_path,
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "25"),
+    busy_timeout: 30_000,
+    auto_vacuum: :full,
+    cache_size: 10_000
+
+  config :backend_fight, BackendFight.Local,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "25"),
     busy_timeout: 30_000,
     auto_vacuum: :full,

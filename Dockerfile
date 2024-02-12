@@ -63,7 +63,7 @@ RUN mix release
 FROM ${RUNNER_IMAGE}
 
 RUN apt-get update -y && \
-  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates \
+  apt-get install -y libstdc++6 openssl libncurses5 locales ca-certificates fuse3 sqlite3 \
   && apt-get clean && rm -f /var/lib/apt/lists/*_*
 
 # Set the locale
@@ -81,6 +81,10 @@ ENV MIX_ENV="prod"
 
 # Only copy the final release from the build stage
 COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/backend_fight ./
+COPY --from=flyio/litefs:0.5 /usr/local/bin/litefs /usr/local/bin/litefs
+ADD litefs/litefs.yml /etc/litefs.yml
+ADD priv/repo/seeds.exs seeds.ex
+ENV DATABASE_PATH="/litefs/prod.db"
 
 # USER nobody
 
@@ -89,4 +93,5 @@ COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/backend_fight
 # above and adding an entrypoint. See https://github.com/krallin/tini for details
 # ENTRYPOINT ["/tini", "--"]
 
-CMD ["/app/bin/server"]
+ENTRYPOINT litefs mount
+# CMD ["/app/bin/server"]

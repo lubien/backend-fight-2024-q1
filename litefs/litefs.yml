@@ -1,0 +1,58 @@
+# This directory is where your application will access the database.
+fuse:
+  dir: "/litefs"
+
+# This directory is where LiteFS will store internal data.
+# You must place this directory on a persistent volume.
+data:
+  dir: "/data/litefs"
+
+# The lease section defines how LiteFS creates a cluster and
+# implements leader election. For dynamic clusters, use the
+# "consul". This allows the primary to change automatically when
+# the current primary goes down. For a simpler setup, use
+# "static" which assigns a single node to be the primary and does
+# not failover.
+lease:
+  # Required. Must be either "consul" or "static".
+  type: "static"
+
+  # Required. The URL for this node's LiteFS API.
+  # Should match HTTP port.
+  advertise-url: "http://rinha1:20202"
+
+  # Sets the hostname that other nodes will use to reference this
+  # node. Automatically assigned based on hostname(1) if not set.
+  hostname: ""
+
+  # Specifies whether the node can become the primary. If using
+  # "static" leasing, this should be set to true on the primary
+  # and false on the replicas.
+  candidate: ${MY_REGION == "primary"}
+
+  # Filtered list of databases to replicate from the primary to this node.
+  # If no databases are specified, all databases are replicated. You may only
+  # filter databases on non-candidate nodes.
+  # databases: [ "my.db", "myother.db" ]
+
+# This section defines a list of commands to run after LiteFS has connected
+# and sync'd with the cluster. You can run multiple commands but LiteFS expects
+# the last command to be long-running (e.g. an application server). When the
+# last command exits, LiteFS is shut down.
+exec:
+  - cmd: "/app/bin/migrate"
+    if-candidate: true
+
+  - cmd: "/app/bin/server"
+
+  # - cmd: "exec /app/bin/backend_fight rpc BackendFight.Release.prod_seed"
+  #   if-candidate: true
+
+# If true, then LiteFS will not exit if there is a validation
+# issue on startup. This can be useful for debugging issues as
+# it avoids constantly restarting the node on ephemeral hosting.
+exit-on-error: false
+
+# If true, then LiteFS will not wait until the node becomes the
+# primary or connects to the primary before starting the subprocess.
+skip-sync: false

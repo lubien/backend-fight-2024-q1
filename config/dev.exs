@@ -1,7 +1,7 @@
 import Config
 
 # Configure your database
-config :backend_fight, BackendFight.Repo,
+config :backend_fight, BackendFight.Repo.Local,
   database: Path.expand("../backend_fight_dev.db", Path.dirname(__ENV__.file)),
   pool_size: 5,
   stacktrace: true,
