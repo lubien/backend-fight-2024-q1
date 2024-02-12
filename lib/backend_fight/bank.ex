@@ -58,7 +58,7 @@ defmodule BackendFight.Bank do
       select: %{
         id: c.id,
         valor: c.limit,
-        tipo: "tipo",
+        tipo: "user",
         descricao: fragment("CAST(? as text)", c.balance),
         realizada_em: "now"
       },
@@ -67,7 +67,7 @@ defmodule BackendFight.Bank do
 
     s = DateTime.utc_now()
     res = case Repo.all(customer_query) do
-      [%{valor: limite, descricao: saldo} | transactions] ->
+      [%{valor: limite, descricao: saldo, tipo: "user"} | transactions] ->
         %{
           saldo: %{
             total: String.to_integer(saldo),
@@ -78,7 +78,7 @@ defmodule BackendFight.Bank do
             |> Enum.map(&Map.drop(&1, [:id]))
         }
 
-      [] ->
+      _other ->
         nil
     end
 
@@ -144,7 +144,6 @@ defmodule BackendFight.Bank do
           {:commit, %{
             saldo: %{saldo | total: new_balance},
             ultimas_transacoes: Enum.take([%{
-              id: transaction.id,
               valor: transaction.value,
               tipo: transaction.type,
               descricao: transaction.description,
