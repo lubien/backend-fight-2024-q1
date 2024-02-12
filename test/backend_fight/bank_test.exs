@@ -10,11 +10,6 @@ defmodule BackendFight.BankTest do
 
     @invalid_attrs %{limit: nil, name: nil}
 
-    test "get_customer!/1 returns the customer with given id" do
-      customer = customer_fixture()
-      assert Bank.get_customer!(customer.id) == customer
-    end
-
     test "create_customer/1 with valid data creates a customer" do
       valid_attrs = %{limit: 42, name: "some name"}
 
@@ -25,11 +20,6 @@ defmodule BackendFight.BankTest do
 
     test "create_customer/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Bank.create_customer(@invalid_attrs)
-    end
-
-    test "change_customer/1 returns a customer changeset" do
-      customer = customer_fixture()
-      assert %Ecto.Changeset{} = Bank.change_customer(customer)
     end
   end
 

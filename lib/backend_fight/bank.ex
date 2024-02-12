@@ -90,36 +90,6 @@ defmodule BackendFight.Bank do
   end
 
   @doc """
-  Gets a single customer.
-
-  Raises `Ecto.NoResultsError` if the Customer does not exist.
-
-  ## Examples
-
-      iex> get_customer!(123)
-      %Customer{}
-
-      iex> get_customer!(456)
-      ** (Ecto.NoResultsError)
-
-  """
-  def get_customer!(id), do: Repo.get!(Customer, id)
-
-  @doc """
-  Gets a single customer or nil
-
-  ## Examples
-
-      iex> get_customer(123)
-      %Customer{}
-
-      iex> get_customer(456)
-      ** nil
-
-  """
-  def get_customer(id), do: Repo.get(Customer, id)
-
-  @doc """
   Creates a customer.
 
   ## Examples
@@ -137,49 +107,7 @@ defmodule BackendFight.Bank do
     |> Repo.insert()
   end
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking customer changes.
-
-  ## Examples
-
-      iex> change_customer(customer)
-      %Ecto.Changeset{data: %Customer{}}
-
-  """
-  def change_customer(%Customer{} = customer, attrs \\ %{}) do
-    Customer.changeset(customer, attrs)
-  end
-
   alias BackendFight.Bank.Transaction
-
-  @doc """
-  Returns the list of transactions.
-
-  ## Examples
-
-      iex> list_transactions()
-      [%Transaction{}, ...]
-
-  """
-  def list_transactions do
-    Repo.all(Transaction)
-  end
-
-  @doc """
-  Gets a single transaction.
-
-  Raises `Ecto.NoResultsError` if the Transaction does not exist.
-
-  ## Examples
-
-      iex> get_transaction!(123)
-      %Transaction{}
-
-      iex> get_transaction!(456)
-      ** (Ecto.NoResultsError)
-
-  """
-  def get_transaction!(id), do: Repo.get!(Transaction, id)
 
   @doc """
   Creates a transaction.
