@@ -2,7 +2,6 @@ defmodule BackendFightWeb.CustomerController do
   use BackendFightWeb, :controller
 
   alias BackendFight.Bank
-  alias BackendFight.CustomerCache
 
   action_fallback BackendFightWeb.FallbackController
 
@@ -15,10 +14,6 @@ defmodule BackendFightWeb.CustomerController do
   end
 
   def get_customer(id) do
-    if data = CustomerCache.get_customer_cache(id) do
-      data
-    else
-      Fly.RPC.rpc_primary({Bank, :get_customer_data, [id]})
-    end
+    Fly.RPC.rpc_primary({Bank, :get_customer_data, [id]})
   end
 end
