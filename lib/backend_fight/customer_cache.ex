@@ -30,12 +30,10 @@ defmodule BackendFight.CustomerCache do
   # To avoid local race conditions with the pubsub broadcast, we set locally first
   def set_customer_cache_and_broadcast(key, prefs) do
     set_customer_cache(key, prefs)
-    Phoenix.PubSub.broadcast(BackendFight.PubSub, "cache", {:set_customer_cache, key, prefs})
   end
 
   def clear_all_caches() do
     Cachex.clear(:customer_cache)
-    Phoenix.PubSub.broadcast(BackendFight.PubSub, "cache", {:clear_cache})
   end
 
   # GenServer Spec
@@ -45,7 +43,6 @@ defmodule BackendFight.CustomerCache do
   end
 
   def init(init_arg) do
-    Phoenix.PubSub.subscribe(BackendFight.PubSub, "cache")
     {:ok, init_arg}
   end
 

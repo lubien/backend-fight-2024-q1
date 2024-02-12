@@ -30,7 +30,6 @@ defmodule BackendFight.Application do
       {DNSCluster,
        resolver: BackendFight.DNSClusterResolver,
        query: Application.get_env(:backend_fight, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: BackendFight.PubSub},
       # Start a worker by calling: BackendFight.Worker.start_link(arg)
       # {BackendFight.Worker, arg},
       # Start to serve requests, typically the last entry
