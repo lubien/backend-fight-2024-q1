@@ -4,6 +4,7 @@ defmodule BackendFight.Bank do
   """
   @warning_diff_ms 50
 
+  alias BackendFight.BankCollector
   alias BackendFight.CustomerCache
 
   import Ecto.Query, warn: false
@@ -124,24 +125,31 @@ defmodule BackendFight.Bank do
   def create_transaction_and_return_customer(customer, attrs) do
     with {:ok, transaction, new_balance} <- create_transaction(customer, attrs) do
       if Application.fetch_env!(:backend_fight, :test?) do
-        Cachex.del!(:customer_cache, customer.id)
+        CustomerCache.clear_all_caches()
+        BankCollector.schedule_work_now()
       end
-      CustomerCache.get_and_update_customer_cache!(customer.id, fn
-        %{saldo: saldo, ultimas_transacoes: ultimas_transacoes} ->
-          # Logger.info("🔥 CACHE UPDATE")
-          {:commit, %{
-            saldo: %{saldo | total: new_balance},
-            ultimas_transacoes: Enum.take([%{
-              id: transaction.id,
-              valor: transaction.value,
-              tipo: transaction.type,
-              descricao: transaction.description,
-              realizada_em: transaction.inserted_at
-            } | ultimas_transacoes], 10)
-          }}
-        _ ->
-          Logger.info("❌ CACHE MISS")
-          {:commit, do_get_customer_data(customer.id)}
+      CustomerCache.get_and_update_customer_cache!(String.to_integer(customer.id), fn found ->
+        customer =
+          case found do
+            %{saldo: _saldo, ultimas_transacoes: _ultimas_transacoes} ->
+              found
+            nil ->
+              Logger.info("❌ CACHE MISS")
+              get_customer_data(customer.id)
+          end
+
+        %{saldo: saldo, ultimas_transacoes: ultimas_transacoes} = customer
+        # Logger.info("🔥 CACHE UPDATE")
+        {:commit, %{
+          saldo: %{saldo | total: new_balance},
+          ultimas_transacoes: Enum.take([%{
+            id: transaction.id,
+            valor: transaction.value,
+            tipo: transaction.type,
+            descricao: transaction.description,
+            realizada_em: transaction.inserted_at
+          } | ultimas_transacoes], 10)
+        }}
       end)
     end
   end
@@ -161,44 +169,45 @@ defmodule BackendFight.Bank do
   end
 
   defp do_create_transaction(%{id: customer_id}, attrs) do
-    changeset = %Transaction{}
-    |> Transaction.changeset(attrs, customer_id)
-
-    case changeset do
-      %Ecto.Changeset{valid?: true} ->
-        data = Ecto.Changeset.apply_changes(changeset)
-        params = [data.description, Atom.to_string(data.type), data.value, data.customer_id]
-
-        transaction = Repo.query!("""
-          INSERT INTO transactions("description", "type", "value", "customer_id", "inserted_at")
-          VALUES ($1, $2, $3, $4, DATETIME('now'))
-          RETURNING id, (select balance from customers where id = $4)
-        """, params)
-
-        %Exqlite.Result{rows: [[id, new_balance]]} = transaction
-
-        {:ok, %Transaction{data | id: id}, new_balance}
-
-      _ ->
-        {:error, changeset}
+    if Application.fetch_env!(:backend_fight, :test?) do
+      CustomerCache.clear_all_caches()
     end
-  rescue
-    _e in Ecto.ConstraintError ->
-      {:error, :not_found}
+    case get_customer_data(customer_id) do
+      nil ->
+        {:error, :not_found}
 
-    e in Exqlite.Error ->
-      case e do
-        %Exqlite.Error{message: "FOREIGN KEY constraint failed"} ->
-          {:error, :not_found}
+      %{saldo: %{limite: limit, total: balance}} ->
+        changeset = %Transaction{}
+        |> Transaction.changeset(attrs, customer_id)
+        |> Transaction.validate_balance(balance, limit)
 
-        _ ->
-          {:error, %Transaction{}
-          |> Transaction.changeset(attrs, customer_id)
-          |> Ecto.Changeset.add_error(:customer_id, "Invalid balance")}
-      end
+        case changeset do
+          %Ecto.Changeset{valid?: true} ->
+            now =
+              DateTime.utc_now()
+              |> DateTime.truncate(:second)
+
+            data =
+              changeset.changes
+              |> Map.put(:inserted_at, now)
+            BackendFight.BankCollector.collect_transaction(data)
+
+            transaction = Ecto.Changeset.apply_changes(%Ecto.Changeset{changeset | changes: data})
+            change = if data.type == :d, do: - data.value, else: data.value
+            new_balance = balance + change
+
+            {:ok, transaction, new_balance}
+
+          _ ->
+            {:error, changeset}
+        end
+    end
   end
 
   def get_customer_balance(customer_id) do
+    if Application.fetch_env!(:backend_fight, :test?) do
+      :ok = BackendFight.BankCollector.schedule_work_now()
+    end
     Repo.get(Customer, customer_id).balance
   end
 end
