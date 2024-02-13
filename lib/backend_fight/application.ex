@@ -7,10 +7,6 @@ defmodule BackendFight.Application do
 
   @impl true
   def start(_type, _args) do
-    if Fly.RPC.is_primary?() do
-      BackendFight.Release.migrate()
-    end
-
     extra_children =
       if Fly.RPC.is_primary?() do
         [
@@ -52,6 +48,6 @@ defmodule BackendFight.Application do
 
   defp skip_migrations?() do
     # By default, sqlite migrations are run when using a release
-    System.get_env("RELEASE_NAME") != nil
+    System.get_env("MY_REGION") != "primary"
   end
 end
