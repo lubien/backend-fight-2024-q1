@@ -160,6 +160,7 @@ defmodule SqliteServer do
 
     :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA synchronous = OFF")
     :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA journal_mode = MEMORY")
+    :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA threads = 32")
     # :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA foreign_keys = ON")
   end
 
