@@ -34,20 +34,10 @@ defmodule BackendFightWeb.TransactionController do
   end
 
   defp parse_params(%{"descricao" => description, "tipo" => type, "valor" => value})
-       when type in ["c", "d"] and is_binary(description) and is_binary(value) do
+       when type in ["c", "d"] and is_binary(description) and is_integer(value) do
     valid_length? = String.length(description) >= 1 && String.length(description) <= 10
-
-    parsed_value =
-      case Integer.parse(value) do
-        {int, ""} ->
-          int
-
-        _ ->
-          :error
-      end
-
-    if parsed_value != :error && valid_length? do
-      {:ok, %{description: description, type: type, value: parsed_value}}
+    if valid_length? do
+      {:ok, %{description: description, type: type, value: value}}
     else
       {:error, :unprocessable_entity}
     end
