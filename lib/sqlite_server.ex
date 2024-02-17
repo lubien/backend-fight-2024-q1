@@ -142,20 +142,20 @@ defmodule SqliteServer do
       foreign key (customer_id) references customers(id))
     """)
     # :ok = Exqlite.Sqlite3.execute(conn, "create index transactions_customer_id ON transactions(customer_id)")
-    # :ok = Exqlite.Sqlite3.execute(conn, """
-    # CREATE TRIGGER if not exists validate_balance_before_insert_transaction
-    # BEFORE INSERT ON transactions
-    # BEGIN
-    #   SELECT CASE WHEN (select balance from customers) + (
-    #     case when NEW.type = 'c' then +NEW.value else -NEW.value end
-    #   ) < -(select "limit" from customers) THEN
-    #     RAISE (ABORT, 'Invalid value')
-    #   END;
+    :ok = Exqlite.Sqlite3.execute(conn, """
+    CREATE TRIGGER if not exists validate_balance_before_insert_transaction
+    BEFORE INSERT ON transactions
+    BEGIN
+      SELECT CASE WHEN (select balance from customers) + (
+        case when NEW.type = 'c' then +NEW.value else -NEW.value end
+      ) < -(select "limit" from customers) THEN
+        RAISE (ABORT, 'Invalid value')
+      END;
 
-    #   UPDATE customers
-    #   SET balance = customers.balance + (case when NEW.type = 'c' then +NEW.value else -NEW.value end);
-    # END;
-    # """)
+      UPDATE customers
+      SET balance = customers.balance + (case when NEW.type = 'c' then +NEW.value else -NEW.value end);
+    END;
+    """)
 
     :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA synchronous = OFF")
     :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA journal_mode = MEMORY")
