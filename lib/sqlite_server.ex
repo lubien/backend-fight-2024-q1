@@ -64,9 +64,11 @@ defmodule SqliteServer do
         "value" as "valor",
         description as "descricao",
         "type" as "tipo",
-        'now' as "realizada_em"
+        inserted_at as "realizada_em"
       from
         transactions
+      ORDER BY
+        inserted_at desc
       LIMIT 10
     """)
     {:ok, %{
@@ -103,7 +105,7 @@ defmodule SqliteServer do
               valor: value,
               descricao: description,
               tipo: type,
-              realidada_em: inserted_at
+              realidada_em: DateTime.from_unix!(inserted_at, :second)
             }
             {:cont, [item | acc]}
 
@@ -131,8 +133,19 @@ defmodule SqliteServer do
   end
 
   defp do_init_db(conn) do
-    :ok = Exqlite.Sqlite3.execute(conn, "create table customers (id integer primary key, name text, \"limit\" integer, balance integer not null)")
-    :ok = Exqlite.Sqlite3.execute(conn, "create table transactions (id integer primary key, description text, customer_id integer, type text, value integer, foreign key (customer_id) references customers(id))")
+    :ok = Exqlite.Sqlite3.execute(conn, """
+      create table customers (id integer primary key, name text, \"limit\" integer, balance integer not null)
+    """)
+    :ok = Exqlite.Sqlite3.execute(conn, """
+    create table transactions (
+      id integer primary key,
+      description text,
+      customer_id integer,
+      type text,
+      value integer,
+      inserted_at integer default (unixepoch()),
+      foreign key (customer_id) references customers(id))
+    """)
     # :ok = Exqlite.Sqlite3.execute(conn, "create index transactions_customer_id ON transactions(customer_id)")
     :ok = Exqlite.Sqlite3.execute(conn, """
     CREATE TRIGGER validate_balance_before_insert_transaction
@@ -152,7 +165,7 @@ defmodule SqliteServer do
 
     :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA synchronous = OFF")
     :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA journal_mode = MEMORY")
-    :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA foreign_keys = ON")
+    # :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA foreign_keys = ON")
   end
 
   defp do_insert_customer(conn, name, limit) do
