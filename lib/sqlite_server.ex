@@ -100,7 +100,7 @@ defmodule SqliteServer do
               valor: value,
               descricao: description,
               tipo: type,
-              realidada_em: DateTime.from_unix!(inserted_at, :second)
+              realidada_em: DateTime.from_unix!(inserted_at, :millisecond)
             }
             {:cont, [item | acc]}
 
@@ -138,7 +138,7 @@ defmodule SqliteServer do
       customer_id integer,
       type text,
       value integer,
-      inserted_at integer default (unixepoch()),
+      inserted_at integer default (CAST(ROUND((julianday('now') - 2440587.5)*86400000) As INTEGER)),
       foreign key (customer_id) references customers(id))
     """)
     # :ok = Exqlite.Sqlite3.execute(conn, "create index transactions_customer_id ON transactions(customer_id)")
