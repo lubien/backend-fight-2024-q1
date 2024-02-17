@@ -20,7 +20,7 @@ defmodule BackendFight.Application do
           {TenantStarter, []}
         ]
       else
-        [BackendFightWeb.Endpoint]
+        []
       end
 
     children = [
@@ -32,7 +32,7 @@ defmodule BackendFight.Application do
       # Start a worker by calling: BackendFight.Worker.start_link(arg)
       # {BackendFight.Worker, arg},
       # Start to serve requests, typically the last entry
-      # BackendFightWeb.Endpoint
+      BackendFightWeb.Endpoint
     ] ++ extra_children
 
     # See https://hexdocs.pm/elixir/Supervisor.html
