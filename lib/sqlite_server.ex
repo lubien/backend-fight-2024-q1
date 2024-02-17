@@ -120,21 +120,21 @@ defmodule SqliteServer do
     :ok = Exqlite.Sqlite3.execute(conn, "create table customers (id integer primary key, name text, \"limit\" integer, balance integer not null)")
     :ok = Exqlite.Sqlite3.execute(conn, "create table transactions (id integer primary key, description text, customer_id integer, type text, value integer, foreign key (customer_id) references customers(id))")
     # :ok = Exqlite.Sqlite3.execute(conn, "create index transactions_customer_id ON transactions(customer_id)")
-    # :ok = Exqlite.Sqlite3.execute(conn, """
-    # CREATE TRIGGER validate_balance_before_insert_transaction
-    # BEFORE INSERT ON transactions
-    # BEGIN
-    #   SELECT CASE WHEN (select balance from customers where id = NEW.customer_id) + (
-    #     case when NEW.type = 'c' then +NEW.value else -NEW.value end
-    #   ) < -(select "limit" from customers where id = NEW.customer_id) THEN
-    #     RAISE (ABORT, 'Invalid value')
-    #   END;
+    :ok = Exqlite.Sqlite3.execute(conn, """
+    CREATE TRIGGER validate_balance_before_insert_transaction
+    BEFORE INSERT ON transactions
+    BEGIN
+      SELECT CASE WHEN (select balance from customers where id = NEW.customer_id) + (
+        case when NEW.type = 'c' then +NEW.value else -NEW.value end
+      ) < -(select "limit" from customers where id = NEW.customer_id) THEN
+        RAISE (ABORT, 'Invalid value')
+      END;
 
-    #   UPDATE customers
-    #   SET balance = customers.balance + (case when NEW.type = 'c' then +NEW.value else -NEW.value end)
-    #   WHERE id = NEW.customer_id;
-    # END;
-    # """)
+      UPDATE customers
+      SET balance = customers.balance + (case when NEW.type = 'c' then +NEW.value else -NEW.value end)
+      WHERE id = NEW.customer_id;
+    END;
+    """)
     # customers = [
     #   [1_000 * 100, "Jonathan"],
     #   [800 * 100, "Joseph"],
