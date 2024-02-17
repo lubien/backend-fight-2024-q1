@@ -25,10 +25,17 @@ defmodule SqliteServer do
     end
   end
 
+  def get_customer(customer_id) do
+    if pid = TenantMapper.get_tenant(customer_id) do
+      GenServer.call(pid, {:get_customer, customer_id})
+    else
+      :ok
+    end
+  end
+
   # Private API
   def start_link(customer_id, name, limit) do
     GenServer.start_link(__MODULE__, [customer_id, name, limit])
-    # GenServer.start_link(__MODULE__, [])
   end
 
   def init([customer_id, name, limit]) do
@@ -39,12 +46,33 @@ defmodule SqliteServer do
     {:ok, insert_transaction_stmt} = Exqlite.Sqlite3.prepare(conn, """
       insert into transactions (customer_id, description, \"type\", \"value\") values (?1, ?2, ?3, ?4)
     """)
+    {:ok, get_customer_stmt} = Exqlite.Sqlite3.prepare(conn, """
+    select "limit", balance from customers where id = ?1
+    """)
     {:ok, get_customer_data_stmt} = Exqlite.Sqlite3.prepare(conn, """
-      select "limit", balance from customers where id = ?1
+      select
+        "limit" as "valor",
+        balance as "descricao",
+        'user' as "tipo",
+        'now' as "realizada_em"
+      from customers
+      where id = ?1
+
+      UNION ALL
+
+      select
+        "value" as "valor",
+        description as "descricao",
+        "type" as "tipo",
+        'now' as "realizada_em"
+      from
+        transactions
+      LIMIT 10
     """)
     {:ok, %{
       conn: conn,
       insert_transaction_stmt: insert_transaction_stmt,
+      get_customer_stmt: get_customer_stmt,
       get_customer_data_stmt: get_customer_data_stmt
     }}
   end
@@ -55,10 +83,8 @@ defmodule SqliteServer do
   end
 
   def handle_call({:insert_transaction, {customer_id, description, type, value}}, _from, %{conn: conn, insert_transaction_stmt: statement} = state) do
-    # {:ok, statement} = Exqlite.Sqlite3.prepare(conn, "insert into transactions (customer_id, description, \"type\", \"value\") values (?1, ?2, ?3, ?4)")
     :ok = Exqlite.Sqlite3.bind(conn, statement, [customer_id, description, type, value])
     Exqlite.Sqlite3.step(conn, statement)
-    # :ok = Exqlite.Sqlite3.release(conn, statement)
     {:reply, :ok, state}
   rescue
     RuntimeError ->
@@ -67,17 +93,42 @@ defmodule SqliteServer do
 
   def handle_call({:get_customer_data, customer_id}, _from, %{conn: conn, get_customer_data_stmt: statement} = state) do
     :ok = Exqlite.Sqlite3.bind(conn, statement, [customer_id])
-    {:row, [limit, balance]} = Exqlite.Sqlite3.step(conn, statement) |> IO.inspect(label: "#{__MODULE__}:#{__ENV__.line} #{DateTime.utc_now}", limit: :infinity)
-    {:reply, %{limit: limit, balance: balance}, state}
+    {:row, [limit, balance, _user, _datetime]} = Exqlite.Sqlite3.step(conn, statement) |> IO.inspect(label: "#{__MODULE__}:#{__ENV__.line} #{DateTime.utc_now}", limit: :infinity)
+    ultimas_transacoes =
+      1..100000
+      |> Enum.reduce_while([], fn _el, acc ->
+        case Exqlite.Sqlite3.step(conn, statement) |> IO.inspect(label: "#{__MODULE__}:#{__ENV__.line} #{DateTime.utc_now}", limit: :infinity) do
+          {:row, [value, description, type, inserted_at]} ->
+            item = %{
+              valor: value,
+              descricao: description,
+              tipo: type,
+              realidada_em: inserted_at
+            }
+            {:cont, [item | acc]}
+
+          _ ->
+            {:halt, acc}
+        end
+      end)
+
+    {:reply, %{
+      saldo: %{limite: limit, total: balance},
+      ultimas_transacoes: Enum.reverse(ultimas_transacoes)
+    }, state}
   rescue
     RuntimeError ->
       {:reply, :ok, state}
   end
 
-  # def handle_call(:init_db, _from, %{conn: conn} = state) do
-  #   do_init_db(conn)
-  #   {:reply, :ok, state}
-  # end
+  def handle_call({:get_customer, customer_id}, _from, %{conn: conn, get_customer_stmt: statement} = state) do
+    :ok = Exqlite.Sqlite3.bind(conn, statement, [customer_id])
+    {:row, [limit, balance]} = Exqlite.Sqlite3.step(conn, statement)
+    {:reply, %{limit: limit, balance: balance}, state}
+  rescue
+    RuntimeError ->
+      {:reply, :ok, state}
+  end
 
   defp do_init_db(conn) do
     :ok = Exqlite.Sqlite3.execute(conn, "create table customers (id integer primary key, name text, \"limit\" integer, balance integer not null)")
@@ -98,16 +149,6 @@ defmodule SqliteServer do
       WHERE id = NEW.customer_id;
     END;
     """)
-    # customers = [
-    #   [1_000 * 100, "Jonathan"],
-    #   [800 * 100, "Joseph"],
-    #   [10_000 * 100, "Jotaro"],
-    #   [100_000 * 100, "Josuke"],
-    #   [5_000 * 100, "Giorno"]
-    # ]
-    # for [limit, name] <- customers do
-    #   do_insert_customer(conn, name, limit)
-    # end
 
     :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA synchronous = OFF")
     :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA journal_mode = MEMORY")

@@ -32,7 +32,7 @@ defmodule BackendFightWeb.TransactionController do
   def do_create(customer_id, %{description: description, type: type, value: value}) do
     Fly.RPC.rpc_primary(fn ->
       :ok = SqliteServer.insert_transaction(customer_id, description, type, value)
-      SqliteServer.get_customer_data(customer_id)
+      SqliteServer.get_customer(customer_id)
     end)
   end
 end
