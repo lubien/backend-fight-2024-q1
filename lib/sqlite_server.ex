@@ -1,10 +1,6 @@
 defmodule SqliteServer do
   use GenServer
 
-  # def init_db do
-  #   GenServer.call(__MODULE__, :init_db)
-  # end
-
   def insert_customer(name, limit) do
     GenServer.call(__MODULE__, {:insert_customer, {name, limit}})
   end

@@ -3,21 +3,18 @@ defmodule BackendFightWeb.TransactionController do
 
   action_fallback BackendFightWeb.FallbackController
 
-  def create(conn, %{
-        "customer_id" => customer_id,
-        "descricao" => descricao,
-        "tipo" => tipo,
-        "valor" => valor
-      }) do
-        id = case Integer.parse(customer_id) do
-          {int, ""} ->
-            int
-          _ ->
-            0
-        end
-    transaction_params = %{description: descricao, type: tipo, value: valor}
+  def create(conn, %{"customer_id" => customer_id} = params) do
+    id =
+      case Integer.parse(customer_id) do
+        {int, ""} ->
+          int
 
-    with %{balance: _total, limit: _limite} = customer_data <- do_create(id, transaction_params) do
+        _ ->
+          0
+      end
+
+    with {:ok, transaction_params} <- parse_params(params),
+         %{balance: _total, limit: _limite} = customer_data <- do_create(id, transaction_params) do
       conn
       # yes, that's by the spec 😨
       |> put_status(:ok)
@@ -34,5 +31,29 @@ defmodule BackendFightWeb.TransactionController do
       :ok = SqliteServer.insert_transaction(customer_id, description, type, value)
       SqliteServer.get_customer(customer_id)
     end)
+  end
+
+  defp parse_params(%{"descricao" => description, "tipo" => type, "valor" => value})
+       when type in ["c", "d"] and is_binary(description) and is_binary(value) do
+    valid_length? = String.length(description) >= 1 && String.length(description) <= 10
+
+    parsed_value =
+      case Integer.parse(value) do
+        {int, ""} ->
+          int
+
+        _ ->
+          :error
+      end
+
+    if parsed_value != :error && valid_length? do
+      {:ok, %{description: description, type: type, value: parsed_value}}
+    else
+      {:error, :unprocessable_entity}
+    end
+  end
+
+  defp parse_params(_params) do
+    {:error, :unprocessable_entity}
   end
 end
