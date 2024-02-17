@@ -5,12 +5,14 @@ defmodule BackendFightWeb.CustomerController do
 
   action_fallback BackendFightWeb.FallbackController
 
-  def show(conn, %{"id" => id}) do
-    if customer_data = get_customer(id) do
-      render(conn, :show, customer_data: customer_data)
-    else
-      {:error, :not_found}
-    end
+  def show(conn, %{"id" => _id}) do
+    # if customer_data = get_customer(id) do
+      render(conn, :show, customer_data: %{
+        saldo: %{total: 1, limite: 1}, ultimas_transacoes: []
+      })
+    # else
+    #   {:error, :not_found}
+    # end
   end
 
   def get_customer(id) do

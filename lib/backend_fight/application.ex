@@ -10,11 +10,15 @@ defmodule BackendFight.Application do
     extra_children =
       if Fly.RPC.is_primary?() do
         [
-          BackendFight.Repo,
-          {Ecto.Migrator,
-           repos: Application.fetch_env!(:backend_fight, :ecto_repos), skip: skip_migrations?()},
-          {BackendFight.CustomerCache, []},
-          {BackendFight.BackCollectorSupervisor, []}
+          # BackendFight.Repo,
+          # {Ecto.Migrator,
+          #  repos: Application.fetch_env!(:backend_fight, :ecto_repos), skip: skip_migrations?()},
+          # {BackendFight.CustomerCache, []},
+          # {BackendFight.BackCollectorSupervisor, []},
+          # {SqliteServer, []}
+          {TenantMapper, []},
+          {TenantSupervisor, []},
+          {TenantStarter, []}
         ]
       else
         []
@@ -46,8 +50,8 @@ defmodule BackendFight.Application do
     :ok
   end
 
-  defp skip_migrations?() do
-    # By default, sqlite migrations are run when using a release
-    System.get_env("MY_REGION") != "primary"
-  end
+  # defp skip_migrations?() do
+  #   # By default, sqlite migrations are run when using a release
+  #   System.get_env("MY_REGION") != "primary"
+  # end
 end
