@@ -94,7 +94,7 @@ defmodule SqliteServer do
 
   def handle_call(:get_customer_data, _from, %{conn: conn, get_customer_data_stmt: statement} = state) do
     :ok = Exqlite.Sqlite3.bind(conn, statement, [])
-    {:row, [limit, balance, _user, _datetime]} = Exqlite.Sqlite3.step(conn, statement) |> IO.inspect(label: "#{__MODULE__}:#{__ENV__.line} #{DateTime.utc_now}", limit: :infinity)
+    {:row, [limit, balance, _user, _datetime]} = Exqlite.Sqlite3.step(conn, statement)
     ultimas_transacoes =
       1..100000
       |> Enum.reduce_while([], fn _el, acc ->
