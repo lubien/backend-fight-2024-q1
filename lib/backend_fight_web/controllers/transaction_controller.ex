@@ -1,8 +1,6 @@
 defmodule BackendFightWeb.TransactionController do
   use BackendFightWeb, :controller
 
-  # alias BackendFight.Bank
-
   action_fallback BackendFightWeb.FallbackController
 
   def create(conn, %{
@@ -19,11 +17,11 @@ defmodule BackendFightWeb.TransactionController do
         end
     transaction_params = %{description: descricao, type: tipo, value: valor}
 
-    with %{total: total, limite: limite} = _customer_data <- do_create(id, transaction_params) do
+    with %{balance: _total, limit: _limite} = customer_data <- do_create(id, transaction_params) do
       conn
       # yes, that's by the spec 😨
       |> put_status(:ok)
-      |> render(:show, customer: %{limit: limite, balance: total})
+      |> render(:show, customer: customer_data)
     end
   end
 
@@ -31,16 +29,10 @@ defmodule BackendFightWeb.TransactionController do
     {:error, :unprocessable_entity}
   end
 
-  # def do_create(customer_id, transaction_params) do
-  #   Fly.RPC.rpc_primary(fn ->
-  #     Bank.create_transaction_and_return_customer(%{id: customer_id}, transaction_params)
-  #   end)
-  # end
   def do_create(customer_id, %{description: description, type: type, value: value}) do
     Fly.RPC.rpc_primary(fn ->
       :ok = SqliteServer.insert_transaction(customer_id, description, type, value)
-      %{total: 1, limite: 1}
-    #   Bank.create_transaction_and_return_customer(%{id: customer_id}, transaction_params)
+      SqliteServer.get_customer_data(customer_id)
     end)
   end
 end

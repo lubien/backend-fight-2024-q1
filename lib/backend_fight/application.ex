@@ -15,7 +15,6 @@ defmodule BackendFight.Application do
           #  repos: Application.fetch_env!(:backend_fight, :ecto_repos), skip: skip_migrations?()},
           # {BackendFight.CustomerCache, []},
           # {BackendFight.BackCollectorSupervisor, []},
-          # {SqliteServer, []}
           {TenantMapper, []},
           {TenantSupervisor, []},
           {TenantStarter, []}

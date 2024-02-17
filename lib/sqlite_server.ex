@@ -1,66 +1,3 @@
-defmodule TenantStarter do
-  use Agent
-
-  def start_link(_opts) do
-    customers = [
-      [1_000 * 100, "Jonathan"],
-      [800 * 100, "Joseph"],
-      [10_000 * 100, "Jotaro"],
-      [100_000 * 100, "Josuke"],
-      [5_000 * 100, "Giorno"]
-    ]
-    for {[limit, name], index} <- Enum.with_index(customers) do
-      # do_insert_customer(conn, name, limit)
-      TenantSupervisor.create_customer(index + 1, name, limit)
-    end
-    Agent.start_link(fn -> %{} end, name: __MODULE__)
-  end
-end
-
-defmodule TenantMapper do
-  use Agent
-
-  def start_link(_opts) do
-    Agent.start_link(fn -> %{} end, name: __MODULE__)
-  end
-
-  def value do
-    Agent.get(__MODULE__, & &1)
-  end
-
-  def add_tenant(id, pid) do
-    Agent.update(__MODULE__, &Map.put_new(&1, id, pid))
-  end
-
-  def get_tenant(id) do
-    Agent.get(__MODULE__, &Map.get(&1, id))
-  end
-end
-
-defmodule TenantSupervisor do
-  use DynamicSupervisor
-
-  def create_customer(customer_id, name, limit) do
-    {:ok, pid} = DynamicSupervisor.start_child(__MODULE__, %{
-      id: String.to_atom("customer_tenant_#{customer_id}"),
-      start: {SqliteServer, :start_link, [customer_id, name, limit]}
-    })
-    TenantMapper.add_tenant(customer_id, pid)
-    :ok
-  end
-
-  # Private API
-
-  def start_link(init_arg) do
-    DynamicSupervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
-  end
-
-  @impl true
-  def init(_init_arg) do
-    DynamicSupervisor.init(strategy: :one_for_one)
-  end
-end
-
 defmodule SqliteServer do
   use GenServer
 
@@ -80,6 +17,14 @@ defmodule SqliteServer do
     end
   end
 
+  def get_customer_data(customer_id) do
+    if pid = TenantMapper.get_tenant(customer_id) do
+      GenServer.call(pid, {:get_customer_data, customer_id})
+    else
+      :ok
+    end
+  end
+
   # Private API
   def start_link(customer_id, name, limit) do
     GenServer.start_link(__MODULE__, [customer_id, name, limit])
@@ -91,8 +36,17 @@ defmodule SqliteServer do
     {:ok, conn} = Exqlite.Sqlite3.open(path)
     do_init_db(conn)
     do_insert_customer(conn, name, limit)
-    {:ok, insert_transaction_stmt} = Exqlite.Sqlite3.prepare(conn, "insert into transactions (customer_id, description, \"type\", \"value\") values (?1, ?2, ?3, ?4)")
-    {:ok, %{conn: conn, insert_transaction_stmt: insert_transaction_stmt}}
+    {:ok, insert_transaction_stmt} = Exqlite.Sqlite3.prepare(conn, """
+      insert into transactions (customer_id, description, \"type\", \"value\") values (?1, ?2, ?3, ?4)
+    """)
+    {:ok, get_customer_data_stmt} = Exqlite.Sqlite3.prepare(conn, """
+      select "limit", balance from customers where id = ?1
+    """)
+    {:ok, %{
+      conn: conn,
+      insert_transaction_stmt: insert_transaction_stmt,
+      get_customer_data_stmt: get_customer_data_stmt
+    }}
   end
 
   def handle_call({:insert_customer, {name, limit}}, _from, %{conn: conn} = state) do
@@ -106,6 +60,15 @@ defmodule SqliteServer do
     Exqlite.Sqlite3.step(conn, statement)
     # :ok = Exqlite.Sqlite3.release(conn, statement)
     {:reply, :ok, state}
+  rescue
+    RuntimeError ->
+      {:reply, :ok, state}
+  end
+
+  def handle_call({:get_customer_data, customer_id}, _from, %{conn: conn, get_customer_data_stmt: statement} = state) do
+    :ok = Exqlite.Sqlite3.bind(conn, statement, [customer_id])
+    {:row, [limit, balance]} = Exqlite.Sqlite3.step(conn, statement) |> IO.inspect(label: "#{__MODULE__}:#{__ENV__.line} #{DateTime.utc_now}", limit: :infinity)
+    {:reply, %{limit: limit, balance: balance}, state}
   rescue
     RuntimeError ->
       {:reply, :ok, state}
