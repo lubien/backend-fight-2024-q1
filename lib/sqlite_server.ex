@@ -11,7 +11,7 @@ defmodule SqliteServer do
 
   def insert_transaction(customer_id, description, type, value) do
     if pid = TenantMapper.get_tenant(customer_id) do
-      GenServer.call(pid, {:insert_transaction, {customer_id, description, type, value}})
+      GenServer.call(pid, {:insert_transaction, {description, type, value}})
     else
       :ok
     end
@@ -19,7 +19,7 @@ defmodule SqliteServer do
 
   def get_customer_data(customer_id) do
     if pid = TenantMapper.get_tenant(customer_id) do
-      GenServer.call(pid, {:get_customer_data, customer_id})
+      GenServer.call(pid, :get_customer_data)
     else
       :ok
     end
@@ -27,7 +27,7 @@ defmodule SqliteServer do
 
   def get_customer(customer_id) do
     if pid = TenantMapper.get_tenant(customer_id) do
-      GenServer.call(pid, {:get_customer, customer_id})
+      GenServer.call(pid, :get_customer)
     else
       :ok
     end
@@ -44,10 +44,10 @@ defmodule SqliteServer do
     do_init_db(conn)
     do_insert_customer(conn, name, limit)
     {:ok, insert_transaction_stmt} = Exqlite.Sqlite3.prepare(conn, """
-      insert into transactions (customer_id, description, \"type\", \"value\") values (?1, ?2, ?3, ?4)
+      insert into transactions (description, \"type\", \"value\") values (?1, ?2, ?3)
     """)
     {:ok, get_customer_stmt} = Exqlite.Sqlite3.prepare(conn, """
-    select "limit", balance from customers where id = ?1
+    select "limit", balance from customers limit 1
     """)
     {:ok, get_customer_data_stmt} = Exqlite.Sqlite3.prepare(conn, """
       select
@@ -56,7 +56,6 @@ defmodule SqliteServer do
         'user' as "tipo",
         'now' as "realizada_em"
       from customers
-      where id = ?1
 
       UNION ALL
 
@@ -69,7 +68,7 @@ defmodule SqliteServer do
         transactions
       ORDER BY
         inserted_at desc
-      LIMIT 10
+      LIMIT 11
     """)
     {:ok, %{
       conn: conn,
@@ -84,8 +83,8 @@ defmodule SqliteServer do
     {:reply, :ok, state}
   end
 
-  def handle_call({:insert_transaction, {customer_id, description, type, value}}, _from, %{conn: conn, insert_transaction_stmt: statement} = state) do
-    :ok = Exqlite.Sqlite3.bind(conn, statement, [customer_id, description, type, value])
+  def handle_call({:insert_transaction, {description, type, value}}, _from, %{conn: conn, insert_transaction_stmt: statement} = state) do
+    :ok = Exqlite.Sqlite3.bind(conn, statement, [description, type, value])
     Exqlite.Sqlite3.step(conn, statement)
     {:reply, :ok, state}
   rescue
@@ -93,13 +92,13 @@ defmodule SqliteServer do
       {:reply, :ok, state}
   end
 
-  def handle_call({:get_customer_data, customer_id}, _from, %{conn: conn, get_customer_data_stmt: statement} = state) do
-    :ok = Exqlite.Sqlite3.bind(conn, statement, [customer_id])
+  def handle_call(:get_customer_data, _from, %{conn: conn, get_customer_data_stmt: statement} = state) do
+    :ok = Exqlite.Sqlite3.bind(conn, statement, [])
     {:row, [limit, balance, _user, _datetime]} = Exqlite.Sqlite3.step(conn, statement) |> IO.inspect(label: "#{__MODULE__}:#{__ENV__.line} #{DateTime.utc_now}", limit: :infinity)
     ultimas_transacoes =
       1..100000
       |> Enum.reduce_while([], fn _el, acc ->
-        case Exqlite.Sqlite3.step(conn, statement) |> IO.inspect(label: "#{__MODULE__}:#{__ENV__.line} #{DateTime.utc_now}", limit: :infinity) do
+        case Exqlite.Sqlite3.step(conn, statement) do
           {:row, [value, description, type, inserted_at]} ->
             item = %{
               valor: value,
@@ -123,8 +122,8 @@ defmodule SqliteServer do
       {:reply, :ok, state}
   end
 
-  def handle_call({:get_customer, customer_id}, _from, %{conn: conn, get_customer_stmt: statement} = state) do
-    :ok = Exqlite.Sqlite3.bind(conn, statement, [customer_id])
+  def handle_call(:get_customer, _from, %{conn: conn, get_customer_stmt: statement} = state) do
+    :ok = Exqlite.Sqlite3.bind(conn, statement, [])
     {:row, [limit, balance]} = Exqlite.Sqlite3.step(conn, statement)
     {:reply, %{limit: limit, balance: balance}, state}
   rescue
@@ -134,10 +133,10 @@ defmodule SqliteServer do
 
   defp do_init_db(conn) do
     :ok = Exqlite.Sqlite3.execute(conn, """
-      create table customers (id integer primary key, name text, \"limit\" integer, balance integer not null)
+      create table if not exists customers (id integer primary key, name text, \"limit\" integer, balance integer not null)
     """)
     :ok = Exqlite.Sqlite3.execute(conn, """
-    create table transactions (
+    create table if not exists transactions (
       id integer primary key,
       description text,
       customer_id integer,
@@ -148,18 +147,17 @@ defmodule SqliteServer do
     """)
     # :ok = Exqlite.Sqlite3.execute(conn, "create index transactions_customer_id ON transactions(customer_id)")
     :ok = Exqlite.Sqlite3.execute(conn, """
-    CREATE TRIGGER validate_balance_before_insert_transaction
+    CREATE TRIGGER if not exists validate_balance_before_insert_transaction
     BEFORE INSERT ON transactions
     BEGIN
-      SELECT CASE WHEN (select balance from customers where id = NEW.customer_id) + (
+      SELECT CASE WHEN (select balance from customers) + (
         case when NEW.type = 'c' then +NEW.value else -NEW.value end
-      ) < -(select "limit" from customers where id = NEW.customer_id) THEN
+      ) < -(select "limit" from customers) THEN
         RAISE (ABORT, 'Invalid value')
       END;
 
       UPDATE customers
-      SET balance = customers.balance + (case when NEW.type = 'c' then +NEW.value else -NEW.value end)
-      WHERE id = NEW.customer_id;
+      SET balance = customers.balance + (case when NEW.type = 'c' then +NEW.value else -NEW.value end);
     END;
     """)
 
