@@ -142,6 +142,7 @@ defmodule SqliteServer do
       foreign key (customer_id) references customers(id))
     """)
     # :ok = Exqlite.Sqlite3.execute(conn, "create index transactions_customer_id ON transactions(customer_id)")
+    :ok = Exqlite.Sqlite3.execute(conn, "create index transactions_inserted_at_desc ON transactions(inserted_at desc)")
     :ok = Exqlite.Sqlite3.execute(conn, """
     CREATE TRIGGER if not exists validate_balance_before_insert_transaction
     BEFORE INSERT ON transactions
