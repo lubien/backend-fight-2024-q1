@@ -1,16 +1,6 @@
 defmodule BackendFightWeb.Router do
   use BackendFightWeb, :router
 
-  pipeline :api do
-    plug :accepts, ["json"]
-  end
-
-  scope "/", BackendFightWeb do
-    pipe_through :api
-    get "/clientes/:id/extrato", CustomerController, :show
-    post "/clientes/:customer_id/transacoes", TransactionController, :create
-  end
-
   # Enable LiveDashboard in development
   # if Application.compile_env(:backend_fight, :dev_routes) do
   #   # If you want to use the LiveDashboard in production, you should put
