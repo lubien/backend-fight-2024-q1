@@ -4,7 +4,25 @@ defmodule BackendFight.Bank do
   """
 
   def get_customer_data(id) do
-    Fly.RPC.rpc_primary({TenantMapper, :get_customer_data, [id]})
+    [
+      [limit, balance, _user, _datetime]
+      | other_rows
+    ] = Fly.RPC.rpc_primary({TenantMapper, :get_customer_data, [id]})
+
+    ultimas_transacoes =
+      Enum.map(other_rows, fn [value, description, type, inserted_at] ->
+        %{
+          valor: value,
+          descricao: description,
+          tipo: type,
+          realidada_em: DateTime.from_unix!(inserted_at, :millisecond)
+        }
+      end)
+
+    %{
+      saldo: %{limite: limit, total: balance},
+      ultimas_transacoes: ultimas_transacoes
+    }
   end
 
   def parse_params(%{"descricao" => description, "tipo" => type, "valor" => value})
@@ -22,8 +40,7 @@ defmodule BackendFight.Bank do
   end
 
   def create_transaction(customer_id, %{description: description, type: type, value: value}) do
-    Fly.RPC.rpc_primary(fn ->
-      TenantMapper.insert_transaction(customer_id, description, type, value)
-    end)
+    {:ok, [limit, balance]} = Fly.RPC.rpc_primary({TenantMapper, :insert_transaction, [customer_id, description, type, value]})
+    %{limit: limit, balance: balance}
   end
 end

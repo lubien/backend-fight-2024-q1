@@ -83,8 +83,7 @@ defmodule SqliteServer do
         } = state
       ) do
     :ok = execute(conn, insert_transaction_stmt, [description, type, value])
-    {:ok, [limit, balance]} = one(conn, get_customer_stmt, [])
-    {:reply, %{limit: limit, balance: balance}, state}
+    {:reply, one(conn, get_customer_stmt, []), state}
   end
 
   def handle_call(
@@ -92,27 +91,7 @@ defmodule SqliteServer do
         _from,
         %{conn: conn, get_customer_data_stmt: statement} = state
       ) do
-    [
-      [limit, balance, _user, _datetime]
-      | other_rows
-    ] = all(conn, statement, [])
-
-    ultimas_transacoes =
-      Enum.map(other_rows, fn [value, description, type, inserted_at] ->
-        %{
-          valor: value,
-          descricao: description,
-          tipo: type,
-          realidada_em: DateTime.from_unix!(inserted_at, :millisecond)
-        }
-      end)
-
-    payload = %{
-      saldo: %{limite: limit, total: balance},
-      ultimas_transacoes: ultimas_transacoes
-    }
-
-    {:reply, payload, state}
+    {:reply, all(conn, statement, []), state}
   end
 
   defp do_init_db(conn) do
