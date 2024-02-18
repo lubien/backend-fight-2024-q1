@@ -43,8 +43,6 @@ defmodule BackendFight.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:fly_rpc, "~> 0.3.0"},
-      {:cachex, "~> 3.6"},
-      {:qex, "~> 0.5"},
       {:bandit, "~> 1.2"}
     ]
   end

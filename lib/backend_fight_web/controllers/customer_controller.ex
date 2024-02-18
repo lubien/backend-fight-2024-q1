@@ -3,6 +3,8 @@ defmodule BackendFightWeb.CustomerController do
 
   action_fallback BackendFightWeb.FallbackController
 
+  alias BackendFight.Bank
+
   def show(conn, %{"id" => id}) do
     id =
       case Integer.parse(id) do
@@ -13,16 +15,12 @@ defmodule BackendFightWeb.CustomerController do
           0
       end
 
-    case get_customer(id) do
+    case Bank.get_customer_data(id) do
       %{} = customer_data ->
         render(conn, :show, customer_data: customer_data)
 
       _ ->
         {:error, :not_found}
     end
-  end
-
-  def get_customer(id) do
-    Fly.RPC.rpc_primary({SqliteServer, :get_customer_data, [id]})
   end
 end

@@ -10,11 +10,6 @@ defmodule BackendFight.Application do
     extra_children =
       if Fly.RPC.is_primary?() do
         [
-          # BackendFight.Repo,
-          # {Ecto.Migrator,
-          #  repos: Application.fetch_env!(:backend_fight, :ecto_repos), skip: skip_migrations?()},
-          # {BackendFight.CustomerCache, []},
-          # {BackendFight.BackCollectorSupervisor, []},
           {TenantMapper, []},
           {TenantSupervisor, []},
           {TenantStarter, []}
@@ -24,7 +19,6 @@ defmodule BackendFight.Application do
       end
 
     children = [
-      {Cachex, name: :customer_cache},
       {Fly.RPC, []},
       {DNSCluster,
        resolver: BackendFight.DNSClusterResolver,

@@ -15,4 +15,28 @@ defmodule TenantMapper do
   def get_tenant(id) do
     Agent.get(__MODULE__, &Map.get(&1, id))
   end
+
+  def insert_transaction(customer_id, description, type, value) do
+    if pid = get_tenant(customer_id) do
+      SqliteServer.insert_transaction(pid, description, type, value)
+    else
+      {:error, :not_found}
+    end
+  end
+
+  def get_customer_data(customer_id) do
+    if pid = get_tenant(customer_id) do
+      SqliteServer.get_customer_data(pid)
+    else
+      {:error, :not_found}
+    end
+  end
+
+  def get_customer(customer_id) do
+    if pid = get_tenant(customer_id) do
+      SqliteServer.get_customer(pid)
+    else
+      {:error, :not_found}
+    end
+  end
 end
