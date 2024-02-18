@@ -3,15 +3,15 @@ defmodule BackendFightWeb.CustomerController do
 
   action_fallback BackendFightWeb.FallbackController
 
-  alias BackendFight.Bank
+  # alias BackendFight.Bank
 
-  def show(conn, %{"id" => id}) do
-    case Bank.get_customer_data(id) do
-      %{} = customer_data ->
-        render(conn, :show, customer_data: customer_data)
+  def show(_conn, %{"id" => _id}) do
+    # case Bank.get_customer_data(id) do
+    #   %{} = customer_data ->
+    #     render(conn, :show, customer_data: customer_data)
 
-      _ ->
-        {:error, :not_found}
-    end
+    #   _ ->
+    #   end
+    {:error, :not_found}
   end
 end
