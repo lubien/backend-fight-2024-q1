@@ -2,10 +2,6 @@ defmodule SqliteServer do
   use GenServer
   require Logger
 
-  def insert_customer(name, limit) do
-    GenServer.call(__MODULE__, {:insert_customer, {name, limit}})
-  end
-
   def insert_transaction(id, description, type, value) do
     GenServer.call(name(id), {:insert_transaction, {description, type, value}})
   end
@@ -69,11 +65,6 @@ defmodule SqliteServer do
        get_customer_stmt: get_customer_stmt,
        get_customer_data_stmt: get_customer_data_stmt
      }}
-  end
-
-  def handle_call({:insert_customer, {name, limit}}, _from, %{conn: conn} = state) do
-    :ok = do_insert_customer(conn, name, limit)
-    {:reply, :ok, state}
   end
 
   def handle_call(
