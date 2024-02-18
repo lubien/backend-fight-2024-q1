@@ -9,11 +9,11 @@ defmodule TenantMapper do
   end
 
   def add_tenant(id, pid) do
-    Agent.update(__MODULE__, &Map.put_new(&1, id, pid))
+    Agent.update(__MODULE__, &Map.put_new(&1, canonical_id(id), pid))
   end
 
   def get_tenant(id) do
-    Agent.get(__MODULE__, &Map.get(&1, id))
+    Agent.get(__MODULE__, &Map.get(&1, canonical_id(id)))
   end
 
   def insert_transaction(customer_id, description, type, value) do
@@ -37,6 +37,17 @@ defmodule TenantMapper do
       SqliteServer.get_customer(pid)
     else
       {:error, :not_found}
+    end
+  end
+
+  defp canonical_id(id) when is_integer(id), do: id
+  defp canonical_id(id) when is_binary(id) do
+    case Integer.parse(id) do
+      {int, ""} ->
+        int
+
+      _ ->
+        0
     end
   end
 end
