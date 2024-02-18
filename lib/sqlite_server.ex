@@ -98,7 +98,7 @@ defmodule SqliteServer do
         from,
         %{conn: conn, get_customer_data_stmt: statement} = state
       ) do
-    Task.Supervisor.async(BackendFight.QuerySupervisor, fn ->
+    Task.Supervisor.start_child(BackendFight.QuerySupervisor, fn ->
       GenServer.reply(from, all(conn, statement, []))
     end)
 
