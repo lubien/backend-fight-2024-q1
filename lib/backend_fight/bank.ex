@@ -4,7 +4,7 @@ defmodule BackendFight.Bank do
   """
 
   def get_customer_data(id) do
-    Fly.RPC.rpc_primary({SqliteServer, :get_customer_data, [id]})
+    Fly.RPC.rpc_primary({TenantMapper, :get_customer_data, [id]})
   end
 
   def parse_params(%{"descricao" => description, "tipo" => type, "valor" => value})
@@ -23,7 +23,7 @@ defmodule BackendFight.Bank do
 
   def create_transaction(customer_id, %{description: description, type: type, value: value}) do
     Fly.RPC.rpc_primary(fn ->
-      :ok = SqliteServer.insert_transaction(customer_id, description, type, value)
+      :ok = TenantMapper.insert_transaction(customer_id, description, type, value)
       SqliteServer.get_customer(customer_id)
     end)
   end
