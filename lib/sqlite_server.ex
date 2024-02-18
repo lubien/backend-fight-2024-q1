@@ -55,16 +55,18 @@ defmodule SqliteServer do
 
       UNION ALL
 
-      select
-        "value" as "valor",
-        description as "descricao",
-        "type" as "tipo",
-        inserted_at as "realizada_em"
-      from
-        transactions
-      ORDER BY
-        inserted_at desc
-      LIMIT 11
+      select * from (
+        select
+          "value" as "valor",
+          description as "descricao",
+          "type" as "tipo",
+          inserted_at as "realizada_em"
+        from
+          transactions
+        ORDER BY
+          inserted_at desc
+        LIMIT 10
+      ) as s1
     """)
     {:ok, %{
       conn: conn,
