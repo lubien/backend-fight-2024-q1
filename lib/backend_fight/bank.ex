@@ -24,7 +24,7 @@ defmodule BackendFight.Bank do
   def create_transaction(customer_id, %{description: description, type: type, value: value}) do
     Fly.RPC.rpc_primary(fn ->
       :ok = TenantMapper.insert_transaction(customer_id, description, type, value)
-      SqliteServer.get_customer(customer_id)
+      TenantMapper.get_customer(customer_id)
     end)
   end
 end
