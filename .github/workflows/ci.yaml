@@ -38,7 +38,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            "lubien/backend-fight-2024-q1:${{ steps.previoustag.outputs.tag }}"
+            "lubien/backend-fight-2024-q1-multitenant:${{ steps.previoustag.outputs.tag }}"
       -
         name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
