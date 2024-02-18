@@ -5,13 +5,16 @@ defmodule BackendFightWeb.CustomerController do
 
   # alias BackendFight.Bank
 
-  def show(_conn, %{"id" => _id}) do
+  def show(conn, %{"id" => _id}) do
     # case Bank.get_customer_data(id) do
     #   %{} = customer_data ->
     #     render(conn, :show, customer_data: customer_data)
 
     #   _ ->
     #   end
-    {:error, :not_found}
+    # {:error, :not_found}
+    Plug.Conn.send_resp(conn, 404, "Not found")
+
+
   end
 end

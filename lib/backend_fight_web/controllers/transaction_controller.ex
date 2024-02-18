@@ -5,8 +5,11 @@ defmodule BackendFightWeb.TransactionController do
 
   action_fallback BackendFightWeb.FallbackController
 
-  def create(_conn, %{"customer_id" => _customer_id} = _params) do
-    {:error, :not_found}
+  def create(conn, %{"customer_id" => _customer_id} = _params) do
+    # {:error, :not_found}
+    Plug.Conn.send_resp(conn, 404, "Not found")
+
+
     # with {:ok, transaction_params} <- Bank.parse_params(params),
     #      %{balance: _total, limit: _limite} = customer_data <-
     #        Bank.create_transaction(customer_id, transaction_params) do
