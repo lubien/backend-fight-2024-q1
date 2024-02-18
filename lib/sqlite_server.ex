@@ -3,11 +3,19 @@ defmodule SqliteServer do
   require Logger
 
   def insert_transaction(id, description, type, value) do
-    GenServer.call(name(id), {:insert_transaction, {description, type, value}})
+    if pid = pid(id) do
+      GenServer.call(pid, {:insert_transaction, {description, type, value}})
+    else
+      {:error, :not_found}
+    end
   end
 
   def get_customer_data(id) do
-    GenServer.call(name(id), :get_customer_data)
+    if pid = pid(id) do
+      GenServer.call(pid, :get_customer_data)
+    else
+      {:error, :not_found}
+    end
   end
 
   # Private API
@@ -180,5 +188,10 @@ defmodule SqliteServer do
 
   defp name(customer_id) do
     String.to_atom("sqlite_server_customer_#{customer_id}")
+  end
+
+  defp pid(customer_id) do
+    name(customer_id)
+    |> Process.whereis()
   end
 end
