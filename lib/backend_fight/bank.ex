@@ -7,7 +7,7 @@ defmodule BackendFight.Bank do
     with [
            [limit, balance, _user, _datetime]
            | other_rows
-         ] <- Fly.RPC.rpc_primary({TenantMapper, :get_customer_data, [id]}) do
+         ] <- rpc_tenant(id, {TenantMapper, :get_customer_data, [id]}) do
       ultimas_transacoes =
         Enum.map(other_rows, fn [value, description, type, inserted_at] ->
           %{
@@ -42,10 +42,27 @@ defmodule BackendFight.Bank do
 
   def create_transaction(customer_id, %{description: description, type: type, value: value}) do
     with {:ok, [limit, balance]} <-
-           Fly.RPC.rpc_primary(
+           rpc_tenant(
+             customer_id,
              {TenantMapper, :insert_transaction, [customer_id, description, type, value]}
            ) do
       %{limit: limit, balance: balance}
+    end
+  end
+
+  def rpc_tenant(customer_id, mfa) do
+    # For local tests
+    if Fly.RPC.my_region() == "local" do
+      Fly.RPC.rpc_primary(mfa)
+    else
+      region =
+        if customer_id in [1, 2, 3, "1", "2", "3"] do
+          "primary"
+        else
+          "replica"
+        end
+
+      Fly.RPC.rpc_region(region, mfa)
     end
   end
 end

@@ -8,15 +8,15 @@ defmodule BackendFight.Application do
   @impl true
   def start(_type, _args) do
     extra_children =
-      if Fly.RPC.is_primary?() do
+      # if Fly.RPC.is_primary?() do
         [
           {TenantMapper, []},
           {TenantSupervisor, []},
           {TenantStarter, []}
         ]
-      else
-        []
-      end
+      # else
+      #   []
+      # end
 
     children = [
       {Fly.RPC, []},
