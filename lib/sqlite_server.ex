@@ -1,5 +1,6 @@
 defmodule SqliteServer do
   use GenServer
+  require Logger
 
   def insert_customer(name, limit) do
     GenServer.call(__MODULE__, {:insert_customer, {name, limit}})
@@ -14,11 +15,12 @@ defmodule SqliteServer do
   end
 
   # Private API
-  def start_link(customer_id, name, limit) do
+  def start_link([customer_id, name, limit]) do
     GenServer.start_link(__MODULE__, [customer_id, name, limit])
   end
 
   def init([customer_id, name, limit]) do
+    TenantMapper.add_tenant(customer_id, self())
     path = "#{System.get_env("DATABASE_PATH")}/#{customer_id}.db"
     {:ok, conn} = Exqlite.Sqlite3.open(path)
     do_init_db(conn)
@@ -58,6 +60,8 @@ defmodule SqliteServer do
           LIMIT 10
         ) as s1
       """)
+
+    Logger.info("Tenant #{customer_id} started")
 
     {:ok,
      %{
