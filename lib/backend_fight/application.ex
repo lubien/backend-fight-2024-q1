@@ -49,9 +49,4 @@ defmodule BackendFight.Application do
     BackendFightWeb.Endpoint.config_change(changed, removed)
     :ok
   end
-
-  # defp skip_migrations?() do
-  #   # By default, sqlite migrations are run when using a release
-  #   System.get_env("MY_REGION") != "primary"
-  # end
 end
