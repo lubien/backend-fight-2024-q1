@@ -9,7 +9,6 @@ defmodule BackendFight.Application do
   def start(_type, _args) do
     first_chilren = [
       {Fly.RPC, []},
-      {TenantMapper, []},
     ]
 
     extra_children =

@@ -6,21 +6,20 @@ defmodule SqliteServer do
     GenServer.call(__MODULE__, {:insert_customer, {name, limit}})
   end
 
-  def insert_transaction(pid, description, type, value) do
-    GenServer.call(pid, {:insert_transaction, {description, type, value}})
+  def insert_transaction(id, description, type, value) do
+    GenServer.call(name(id), {:insert_transaction, {description, type, value}})
   end
 
-  def get_customer_data(pid) do
-    GenServer.call(pid, :get_customer_data)
+  def get_customer_data(id) do
+    GenServer.call(name(id), :get_customer_data)
   end
 
   # Private API
   def start_link([customer_id, name, limit]) do
-    GenServer.start_link(__MODULE__, [customer_id, name, limit])
+    GenServer.start_link(__MODULE__, [customer_id, name, limit], name: name(customer_id))
   end
 
   def init([customer_id, name, limit]) do
-    TenantMapper.add_tenant(customer_id, self())
     path = "#{System.get_env("DATABASE_PATH")}/#{customer_id}.db"
     {:ok, conn} = Exqlite.Sqlite3.open(path)
     do_init_db(conn)
@@ -186,5 +185,9 @@ defmodule SqliteServer do
       end
     end)
     |> Enum.to_list()
+  end
+
+  defp name(customer_id) do
+    String.to_atom("sqlite_server_customer_#{customer_id}")
   end
 end

@@ -7,7 +7,7 @@ defmodule BackendFight.Bank do
     with [
            [limit, balance, _user, _datetime]
            | other_rows
-         ] <- rpc_tenant(id, {TenantMapper, :get_customer_data, [id]}) do
+         ] <- rpc_tenant(id, {SqliteServer, :get_customer_data, [id]}) do
       ultimas_transacoes =
         Enum.map(other_rows, fn [value, description, type, inserted_at] ->
           %{
@@ -44,7 +44,7 @@ defmodule BackendFight.Bank do
     with {:ok, [limit, balance]} <-
            rpc_tenant(
              customer_id,
-             {TenantMapper, :insert_transaction, [customer_id, description, type, value]}
+             {SqliteServer, :insert_transaction, [customer_id, description, type, value]}
            ) do
       %{limit: limit, balance: balance}
     end
