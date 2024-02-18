@@ -147,11 +147,10 @@ defmodule SqliteServer do
     CREATE TRIGGER if not exists validate_balance_before_insert_transaction
     BEFORE INSERT ON transactions
     BEGIN
-      SELECT CASE WHEN (select balance from customers) + (
-        case when NEW.type = 'c' then +NEW.value else -NEW.value end
-      ) < -(select "limit" from customers) THEN
-        RAISE (ABORT, 'Invalid value')
-      END;
+      SELECT CASE WHEN (c.balance + (CASE WHEN NEW.type = 'c' THEN NEW.value ELSE -NEW.value END)) < -c."limit"
+        THEN RAISE (ABORT, 'Invalid value')
+      END
+      FROM (SELECT balance, "limit" FROM customers) AS c;
 
       UPDATE customers
       SET balance = customers.balance + (case when NEW.type = 'c' then +NEW.value else -NEW.value end);
