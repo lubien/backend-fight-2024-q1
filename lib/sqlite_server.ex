@@ -90,10 +90,14 @@ defmodule SqliteServer do
 
   def handle_call(
         :get_customer_data,
-        _from,
+        from,
         %{conn: conn, get_customer_data_stmt: statement} = state
       ) do
-    {:reply, all(conn, statement, []), state}
+    Task.async(fn ->
+      GenServer.reply(from, all(conn, statement, []))
+    end)
+
+    {:noreply, state}
   end
 
   defp do_init_db(conn) do
