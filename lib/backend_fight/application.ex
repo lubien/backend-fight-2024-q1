@@ -9,6 +9,7 @@ defmodule BackendFight.Application do
   def start(_type, _args) do
     first_chilren = [
       {Fly.RPC, []},
+      {Task.Supervisor, name: BackendFight.QuerySupervisor},
     ]
 
     extra_children =

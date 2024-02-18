@@ -77,15 +77,20 @@ defmodule SqliteServer do
 
   def handle_call(
         {:insert_transaction, {description, type, value}},
-        _from,
+        from,
         %{
           conn: conn,
           insert_transaction_stmt: insert_transaction_stmt,
           get_customer_stmt: get_customer_stmt
         } = state
       ) do
-    :ok = execute(conn, insert_transaction_stmt, [description, type, value])
-    {:reply, one(conn, get_customer_stmt, []), state}
+    Task.Supervisor.start_child(BackendFight.QuerySupervisor, fn ->
+      :ok = execute(conn, insert_transaction_stmt, [description, type, value])
+      GenServer.reply(from, one(conn, get_customer_stmt, []))
+      :noreply
+    end)
+
+    {:noreply, state}
   end
 
   def handle_call(
@@ -93,7 +98,7 @@ defmodule SqliteServer do
         from,
         %{conn: conn, get_customer_data_stmt: statement} = state
       ) do
-    Task.async(fn ->
+    Task.Supervisor.async(BackendFight.QuerySupervisor, fn ->
       GenServer.reply(from, all(conn, statement, []))
     end)
 
