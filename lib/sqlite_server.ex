@@ -82,8 +82,7 @@ defmodule SqliteServer do
         _from,
         %{conn: conn, insert_transaction_stmt: statement} = state
       ) do
-    :ok = Exqlite.Sqlite3.bind(conn, statement, [description, type, value])
-    Exqlite.Sqlite3.step(conn, statement)
+    :ok = execute(conn, statement, [description, type, value])
     {:reply, :ok, state}
   rescue
     RuntimeError ->
@@ -95,55 +94,42 @@ defmodule SqliteServer do
         _from,
         %{conn: conn, get_customer_data_stmt: statement} = state
       ) do
-    :ok = Exqlite.Sqlite3.bind(conn, statement, [])
-    {:row, [limit, balance, _user, _datetime]} = Exqlite.Sqlite3.step(conn, statement)
+    [
+      [limit, balance, _user, _datetime]
+      | other_rows
+    ] = all(conn, statement, [])
 
     ultimas_transacoes =
-      1..100_000
-      |> Enum.reduce_while([], fn _el, acc ->
-        case Exqlite.Sqlite3.step(conn, statement) do
-          {:row, [value, description, type, inserted_at]} ->
-            item = %{
-              valor: value,
-              descricao: description,
-              tipo: type,
-              realidada_em: DateTime.from_unix!(inserted_at, :millisecond)
-            }
-
-            {:cont, [item | acc]}
-
-          _ ->
-            {:halt, acc}
-        end
+      Enum.map(other_rows, fn [value, description, type, inserted_at] ->
+        %{
+          valor: value,
+          descricao: description,
+          tipo: type,
+          realidada_em: DateTime.from_unix!(inserted_at, :millisecond)
+        }
       end)
 
-    {:reply,
-     %{
-       saldo: %{limite: limit, total: balance},
-       ultimas_transacoes: Enum.reverse(ultimas_transacoes)
-     }, state}
-  rescue
-    RuntimeError ->
-      {:reply, :ok, state}
+    payload = %{
+      saldo: %{limite: limit, total: balance},
+      ultimas_transacoes: ultimas_transacoes
+    }
+
+    {:reply, payload, state}
   end
 
   def handle_call(:get_customer, _from, %{conn: conn, get_customer_stmt: statement} = state) do
-    :ok = Exqlite.Sqlite3.bind(conn, statement, [])
-    {:row, [limit, balance]} = Exqlite.Sqlite3.step(conn, statement)
+    {:ok, [limit, balance]} = one(conn, statement, [])
     {:reply, %{limit: limit, balance: balance}, state}
-  rescue
-    RuntimeError ->
-      {:reply, :ok, state}
   end
 
   defp do_init_db(conn) do
     :ok =
-      Exqlite.Sqlite3.execute(conn, """
+      execute(conn, """
         create table if not exists customers (id integer primary key, name text, \"limit\" integer, balance integer not null)
       """)
 
     :ok =
-      Exqlite.Sqlite3.execute(conn, """
+      execute(conn, """
       create table if not exists transactions (
         id integer primary key,
         description text,
@@ -154,15 +140,14 @@ defmodule SqliteServer do
         foreign key (customer_id) references customers(id))
       """)
 
-    # :ok = Exqlite.Sqlite3.execute(conn, "create index transactions_customer_id ON transactions(customer_id)")
     :ok =
-      Exqlite.Sqlite3.execute(
+      execute(
         conn,
-        "create index transactions_inserted_at_desc ON transactions(inserted_at desc)"
+        "create index if not exists transactions_inserted_at_desc ON transactions(inserted_at desc)"
       )
 
     :ok =
-      Exqlite.Sqlite3.execute(conn, """
+      execute(conn, """
       CREATE TRIGGER if not exists validate_balance_before_insert_transaction
       BEFORE INSERT ON transactions
       BEGIN
@@ -176,12 +161,12 @@ defmodule SqliteServer do
       END;
       """)
 
-    :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA synchronous = OFF")
-    :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA journal_mode = WAL")
-    :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA threads = 32")
-    :ok = Exqlite.Sqlite3.execute(conn, "PRAGMA temp_store = MEMORY")
-    :ok = Exqlite.Sqlite3.execute(conn, "pragma mmap_size = 30000000000")
-    :ok = Exqlite.Sqlite3.execute(conn, "pragma page_size = 32768")
+    :ok = execute(conn, "PRAGMA synchronous = OFF")
+    :ok = execute(conn, "PRAGMA journal_mode = WAL")
+    :ok = execute(conn, "PRAGMA threads = 32")
+    :ok = execute(conn, "PRAGMA temp_store = MEMORY")
+    :ok = execute(conn, "pragma mmap_size = 30000000000")
+    :ok = execute(conn, "pragma page_size = 32768")
   end
 
   defp do_insert_customer(conn, name, limit) do
@@ -191,9 +176,39 @@ defmodule SqliteServer do
         "insert into customers (\"limit\", name, balance) values (?1, ?2, 0)"
       )
 
-    :ok = Exqlite.Sqlite3.bind(conn, statement, [limit, name])
-    :done = Exqlite.Sqlite3.step(conn, statement)
+    :ok = execute(conn, statement, [limit, name])
     :ok = Exqlite.Sqlite3.release(conn, statement)
     :ok
+  end
+
+  defp execute(conn, stmt) do
+    Exqlite.Sqlite3.execute(conn, stmt)
+  end
+
+  defp execute(conn, stmt, bindings) do
+    :ok = Exqlite.Sqlite3.bind(conn, stmt, bindings)
+    Exqlite.Sqlite3.step(conn, stmt)
+    :ok
+  end
+
+  defp one(conn, stmt, bindings) do
+    :ok = Exqlite.Sqlite3.bind(conn, stmt, bindings)
+    {:row, row} = Exqlite.Sqlite3.step(conn, stmt)
+    {:ok, row}
+  end
+
+  defp all(conn, stmt, bindings) do
+    :ok = Exqlite.Sqlite3.bind(conn, stmt, bindings)
+
+    Stream.unfold(:ok, fn _ ->
+      case Exqlite.Sqlite3.step(conn, stmt) do
+        {:row, row} ->
+          {row, :ok}
+
+        :done ->
+          nil
+      end
+    end)
+    |> Enum.to_list()
   end
 end
