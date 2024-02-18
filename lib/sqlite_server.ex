@@ -85,9 +85,6 @@ defmodule SqliteServer do
     :ok = execute(conn, insert_transaction_stmt, [description, type, value])
     {:ok, [limit, balance]} = one(conn, get_customer_stmt, [])
     {:reply, %{limit: limit, balance: balance}, state}
-  rescue
-    RuntimeError ->
-      {:reply, :ok, state}
   end
 
   def handle_call(
