@@ -13,10 +13,6 @@ defmodule SqliteServer do
     GenServer.call(pid, :get_customer_data)
   end
 
-  def get_customer(pid) do
-    GenServer.call(pid, :get_customer)
-  end
-
   # Private API
   def start_link(customer_id, name, limit) do
     GenServer.start_link(__MODULE__, [customer_id, name, limit])
@@ -120,11 +116,6 @@ defmodule SqliteServer do
     }
 
     {:reply, payload, state}
-  end
-
-  def handle_call(:get_customer, _from, %{conn: conn, get_customer_stmt: statement} = state) do
-    {:ok, [limit, balance]} = one(conn, statement, [])
-    {:reply, %{limit: limit, balance: balance}, state}
   end
 
   defp do_init_db(conn) do

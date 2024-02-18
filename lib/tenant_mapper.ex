@@ -32,14 +32,6 @@ defmodule TenantMapper do
     end
   end
 
-  def get_customer(customer_id) do
-    if pid = get_tenant(customer_id) do
-      SqliteServer.get_customer(pid)
-    else
-      {:error, :not_found}
-    end
-  end
-
   defp canonical_id(id) when is_integer(id), do: id
   defp canonical_id(id) when is_binary(id) do
     case Integer.parse(id) do
