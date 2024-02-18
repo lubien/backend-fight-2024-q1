@@ -77,20 +77,15 @@ defmodule SqliteServer do
 
   def handle_call(
         {:insert_transaction, {description, type, value}},
-        from,
+        _from,
         %{
           conn: conn,
           insert_transaction_stmt: insert_transaction_stmt,
           get_customer_stmt: get_customer_stmt
         } = state
       ) do
-    Task.Supervisor.start_child(BackendFight.QuerySupervisor, fn ->
-      :ok = execute(conn, insert_transaction_stmt, [description, type, value])
-      GenServer.reply(from, one(conn, get_customer_stmt, []))
-      :noreply
-    end)
-
-    {:noreply, state}
+    :ok = execute(conn, insert_transaction_stmt, [description, type, value])
+    {:reply, one(conn, get_customer_stmt, []), state}
   end
 
   def handle_call(
