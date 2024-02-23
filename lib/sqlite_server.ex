@@ -88,16 +88,8 @@ defmodule SqliteServer do
     {:reply, one(conn, get_customer_stmt, []), state}
   end
 
-  def handle_call(
-        :get_customer_data,
-        from,
-        %{conn: conn, get_customer_data_stmt: statement} = state
-      ) do
-    Task.Supervisor.start_child(BackendFight.QuerySupervisor, fn ->
-      GenServer.reply(from, all(conn, statement, []))
-    end)
-
-    {:noreply, state}
+  def handle_call(:get_customer_data, _from, %{conn: conn, get_customer_data_stmt: statement} = state) do
+    {:reply, all(conn, statement, []), state}
   end
 
   defp do_init_db(conn) do
