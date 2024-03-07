@@ -57,9 +57,9 @@ defmodule BackendFight.Bank do
     else
       region =
         if customer_id in [1, 2, 3, "1", "2", "3"] do
-          "primary"
+          System.get_env("PRIMARY_REGION")
         else
-          "replica"
+          System.get_env("SECONDARY_REGION")
         end
 
       Fly.RPC.rpc_region(region, mfa)

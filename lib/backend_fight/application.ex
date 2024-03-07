@@ -26,10 +26,17 @@ defmodule BackendFight.Application do
         ]
       end
 
+    cluster_opts = [query: Application.get_env(:backend_fight, :dns_cluster_query) || :ignore]
+
+    cluster_opts =
+      if System.get_env("USE_DNS_CLUSTER_RESOLVER") do
+        Keyword.put(cluster_opts, :resolver, BackendFight.DNSClusterResolver)
+      else
+        cluster_opts
+      end
+
     children = first_chilren ++ extra_children ++ [
-      {DNSCluster,
-       resolver: BackendFight.DNSClusterResolver,
-       query: Application.get_env(:backend_fight, :dns_cluster_query) || :ignore},
+      {DNSCluster, cluster_opts},
       # Start a worker by calling: BackendFight.Worker.start_link(arg)
       # {BackendFight.Worker, arg},
       # Start to serve requests, typically the last entry
